@@ -57,7 +57,7 @@ setup(
     install_requires=[
         'defusedxml>=0.4.1',
         'Django>=2.2,<4',
-        'pysaml2>=5.3.0',
+        'pysaml2>=6.4.1',
         ],
     tests_require=[
         # Provides assert_called_once.
