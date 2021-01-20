@@ -24,7 +24,7 @@ def read(*rnames):
 
 setup(
     name='djangosaml2',
-    version='1.0.1',
+    version='1.0.1-1',
     description='pysaml2 integration for Django',
     long_description=read('README.rst'),
     classifiers=[
@@ -56,7 +56,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'defusedxml>=0.4.1',
-        'Django>=2.2,<4',
+        'Django>=2.2,<5',
         'pysaml2>=6.5.0',
         ],
     tests_require=[
