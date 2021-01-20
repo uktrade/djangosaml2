@@ -1,9 +1,15 @@
 Changes
 =======
 
+v1.0.1 (2020-01-20)
+-------------------
+- PySAML2 dependency, security update
+  https://github.com/IdentityPython/pysaml2/commit/12ec4a70c5aaf4c144f6b30a158193ca99bc76cd
+
 v1.0.0 (2020-10-15)
 -------------------
 - General refactor with Django ClassViews
+
 
 0.50.0 (2020-10-15)
 -------------------
