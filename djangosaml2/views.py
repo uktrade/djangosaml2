@@ -34,7 +34,8 @@ from saml2.config import SPConfig
 from saml2.ident import code, decode
 from saml2.mdstore import SourceNotFound
 from saml2.metadata import entity_descriptor
-from saml2.response import (SignatureError, StatusAuthnFailed, StatusError,
+from saml2.response import (RequestVersionTooLow, 
+                            SignatureError, StatusAuthnFailed, StatusError,
                             StatusNoAuthnContext, StatusRequestDenied,
                             UnsolicitedResponse)
 from saml2.s_utils import UnsupportedBinding
@@ -346,6 +347,9 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         except UnsolicitedResponse as e:
             _exception = e
             logger.exception("Received SAMLResponse when no request has been made.")
+        except RequestVersionTooLow as e:
+            _exception = e
+            logger.exception("Received SAMLResponse have a deprecated SAML2 VERSION.")
 
         if _exception:
             return self.handle_acs_failure(request, exception=_exception)
