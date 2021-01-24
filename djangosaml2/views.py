@@ -82,7 +82,10 @@ class SPConfigMixin:
     def get_state_client(self, request: HttpRequest):
         conf = self.get_sp_config(request)
         state = StateCache(request.saml_session)
-        client = Saml2Client(conf, state_cache=state, identity_cache=IdentityCache(request.saml_session))
+        client = Saml2Client(
+            conf, state_cache=state, 
+            identity_cache=IdentityCache(request.saml_session)
+        )
         return state, client
 
 
