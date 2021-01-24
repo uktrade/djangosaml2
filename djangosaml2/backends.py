@@ -77,7 +77,7 @@ class Saml2Backend(ModelBackend):
 
         # Lookup value
         if getattr(settings, 'SAML_USE_NAME_ID_AS_USERNAME', False):
-            if 'name_id' in session_info:
+            if session_info.get('name_id'):
                 logger.debug('name_id: %s', session_info['name_id'])
                 user_lookup_value = session_info['name_id'].text
             else:

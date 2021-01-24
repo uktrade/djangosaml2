@@ -350,7 +350,10 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         except RequestVersionTooLow as e:
             _exception = e
             logger.exception("Received SAMLResponse have a deprecated SAML2 VERSION.")
-
+        except Exception as e:
+            _exception = e
+            logger.exception("SAMLResponse Error")
+        
         if _exception:
             return self.handle_acs_failure(request, exception=_exception)
         elif response is None:
