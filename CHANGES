@@ -1,6 +1,10 @@
 Changes
 =======
 
+v1.0.3 (2020-02-04)
+- Django Logout behaviour improved
+
+
 v1.0.2 (2020-01-24)
 - RequestVersionTooLow exception handled in ACS
 - Better exception handling for Malformed SAML Response
