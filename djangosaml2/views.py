@@ -124,8 +124,7 @@ class LoginView(SPConfigMixin, View):
         return next_path
 
     def get(self, request, *args, **kwargs):
-        logger.debug('Login process started')
-
+        logger.debug('Login process started')        
         next_path = self.get_next_path(request)
 
         # if the user is already authenticated that maybe because of two reasons:
@@ -320,7 +319,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         oq_cache = OutstandingQueriesCache(request.saml_session)
         oq_cache.sync()
         outstanding_queries = oq_cache.outstanding_queries()
-
+        
         _exception = None
         try:
             response = client.parse_authn_request_response(request.POST['SAMLResponse'],
@@ -373,7 +372,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
             attribute_mapping = attribute_mapping()
         if callable(create_unknown_user):
             create_unknown_user = create_unknown_user()
-
+        
         logger.debug('Trying to authenticate the user. Session info: %s', session_info)
         user = auth.authenticate(request=request,
                                  session_info=session_info,

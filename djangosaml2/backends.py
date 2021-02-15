@@ -94,12 +94,12 @@ class Saml2Backend(ModelBackend):
         logger.debug('attribute_mapping: %s', attribute_mapping)
         for saml_attr, django_fields in attribute_mapping.items():
             if django_field in django_fields and saml_attr in attributes:
-                saml_attribute = attributes.get(saml_attr, [None])[0]
-                if not saml_attribute:
+                saml_attribute = attributes.get(saml_attr, [None])
+                if not saml_attribute or not saml_attribute[0]:
                     logger.error('attributes[saml_attr] attribute '
                                  'value is missing. Probably the user '
                                  'session is expired.')
-        return saml_attribute
+        return saml_attribute[0]
 
     def authenticate(self, request, session_info=None, attribute_mapping=None, create_unknown_user=True, **kwargs):
         if session_info is None or attribute_mapping is None:
