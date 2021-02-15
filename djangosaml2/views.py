@@ -82,7 +82,10 @@ class SPConfigMixin:
     def get_state_client(self, request: HttpRequest):
         conf = self.get_sp_config(request)
         state = StateCache(request.saml_session)
-        client = Saml2Client(conf, state_cache=state, identity_cache=IdentityCache(request.saml_session))
+        client = Saml2Client(
+            conf, state_cache=state, 
+            identity_cache=IdentityCache(request.saml_session)
+        )
         return state, client
 
 
@@ -466,7 +469,7 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
             logger.exception('Error Handled - SLO not supported by IDP: {}'.format(exp))
             auth.logout(request)
             state.sync()
-            return HttpResponseRedirect(settings.LOGOUT_REDIRECT_URL)
+            return HttpResponseRedirect(getattr(settings, 'LOGOUT_REDIRECT_URL', '/'))
 
         auth.logout(request)
         state.sync()
@@ -567,8 +570,8 @@ class LogoutView(SPConfigMixin, View):
 
 def finish_logout(request, response, next_page=None):
     if (getattr(settings, 'SAML_IGNORE_LOGOUT_ERRORS', False) or (response and response.status_ok())):
-        if next_page is None and hasattr(settings, 'LOGOUT_REDIRECT_URL'):
-            next_page = settings.LOGOUT_REDIRECT_URL
+        if not next_page:
+            next_page = getattr(settings, 'LOGOUT_REDIRECT_URL', '/')
         logger.debug('Performing django logout with a next_page of %s', next_page)
         return AuthLogoutView.as_view()(request, next_page=next_page)
     logger.error('Unknown error during the logout')
