@@ -1,6 +1,10 @@
 Changes
 =======
 
+v.1.0.4
+- fixed saml_attributes of zero length
+- removed unused code
+
 v1.0.3 (2020-02-04)
 - Django Logout behaviour improved
 
