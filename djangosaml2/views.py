@@ -103,7 +103,6 @@ class LoginView(SPConfigMixin, View):
         If set to None or nonexistent template, default form from the saml2 library
         will be rendered.
     """
-    logger.debug('Login process started')
 
     wayf_template = 'djangosaml2/wayf.html'
     authorization_error_template = 'djangosaml2/auth_error.html'
@@ -124,7 +123,7 @@ class LoginView(SPConfigMixin, View):
         return next_path
 
     def get(self, request, *args, **kwargs):
-        logger.debug('Login process started')        
+        logger.debug('Login process started')     
         next_path = self.get_next_path(request)
 
         # if the user is already authenticated that maybe because of two reasons:
