@@ -402,7 +402,6 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
     def post_login_hook(self, request: HttpRequest, user: settings.AUTH_USER_MODEL, session_info: dict) -> None:
         """ If desired, a hook to add logic after a user has succesfully logged in.
         """
-        pass
 
     def build_relay_state(self) -> str:
         """ The relay state is a URL used to redirect the user to the view where they came from.
@@ -418,7 +417,6 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
     def customize_session(self, user, session_info: dict):
         """ Subclasses can use this for customized functionality around user sessions.
         """
-        pass
 
     def customize_relay_state(self, relay_state: str) -> str:
         """ Subclasses may override this method to implement custom logic for relay state.

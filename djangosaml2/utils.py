@@ -20,7 +20,6 @@ from typing import Optional
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.http import is_safe_url
-from django.utils.module_loading import import_string
 from saml2.config import SPConfig
 from saml2.s_utils import UnknownSystemEntity
 

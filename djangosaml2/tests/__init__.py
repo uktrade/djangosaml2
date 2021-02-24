@@ -25,7 +25,6 @@ from django.conf import settings
 from django.contrib.auth import SESSION_KEY, get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ImproperlyConfigured
-from django.template import Context, Template
 from django.test import Client, TestCase, override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
@@ -39,8 +38,7 @@ from djangosaml2.utils import (get_idp_sso_supported_bindings,
                                get_session_id_from_saml2,
                                get_subject_id_from_saml2,
                                saml2_from_httpredirect_request)
-from djangosaml2.views import (EchoAttributesView, _set_subject_id,
-                               finish_logout)
+from djangosaml2.views import (EchoAttributesView, finish_logout)
 from saml2.config import SPConfig
 from saml2.s_utils import decode_base64_and_inflate, deflate_and_base64_encode
 
