@@ -315,11 +315,12 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         create_unknown_user = create_unknown_user or get_custom_setting('SAML_CREATE_UNKNOWN_USER', True)
         conf = self.get_sp_config(request)
 
-        client = Saml2Client(conf, identity_cache=IdentityCache(request.saml_session))
+        identity_cache = IdentityCache(request.saml_session)
+        client = Saml2Client(conf, identity_cache=identity_cache)
         oq_cache = OutstandingQueriesCache(request.saml_session)
         oq_cache.sync()
         outstanding_queries = oq_cache.outstanding_queries()
-        
+                
         _exception = None
         try:
             response = client.parse_authn_request_response(request.POST['SAMLResponse'],
