@@ -1,6 +1,16 @@
 Changes
 =======
 
+v.1.0.5 (2021-03-05)
+--------------------
+- code linting, cleanup. Not enough but better than before
+- Documentation: Replace signal with hooks (#251)
+- Better saml_attribute handling in backend - more resilient
+- Add session_info to user auth failed template (#248)
+- Fix SAML_ACS_FAILURE_RESPONSE_FUNCTION override
+- Update Custom Error Handler docs
+
+
 v.1.0.4 (2021-02-16)
 --------------------
 - fixed saml_attributes of zero length
