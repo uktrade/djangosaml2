@@ -31,10 +31,12 @@ def get_config_loader(path: str) -> Callable:
     try:
         config_loader = import_string(path)
     except ImportError as e:
-        raise ImproperlyConfigured(f'Error importing SAML config loader {path}: "{e}"')
+        raise ImproperlyConfigured(
+            f'Error importing SAML config loader {path}: "{e}"')
 
     if not callable(config_loader):
-        raise ImproperlyConfigured("SAML config loader must be a callable object.")
+        raise ImproperlyConfigured(
+            "SAML config loader must be a callable object.")
 
     return config_loader
 
@@ -54,7 +56,8 @@ def get_config(config_loader_path: Optional[Union[Callable, str]] = None, reques
         If the config_loader_path is a callable instead of a string, no importing is necessary and it will be used directly.
         Return the resulting SPConfig.
     """
-    config_loader_path = config_loader_path or get_custom_setting('SAML_CONFIG_LOADER', 'djangosaml2.conf.config_settings_loader')
+    config_loader_path = config_loader_path or get_custom_setting(
+        'SAML_CONFIG_LOADER', 'djangosaml2.conf.config_settings_loader')
 
     if callable(config_loader_path):
         config_loader = config_loader_path

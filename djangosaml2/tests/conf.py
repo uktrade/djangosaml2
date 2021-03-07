@@ -45,22 +45,22 @@ def create_conf(sp_host='sp.example.com', idp_hosts=['idp.example.com'],
                     'assertion_consumer_service': [
                         ('http://%s/saml2/acs/' % sp_host,
                          saml2.BINDING_HTTP_POST),
-                        ],
+                    ],
                     'single_logout_service': [
                         ('http://%s/saml2/ls/' % sp_host,
                          saml2.BINDING_HTTP_REDIRECT),
-                        ],
-                    },
+                    ],
+                },
                 'required_attributes': ['uid'],
                 'optional_attributes': ['eduPersonAffiliation'],
                 'idp': {},  # this is filled later
                 'want_response_signed': False,
-                },
             },
+        },
 
         'metadata': {
             'local': [os.path.join(BASEDIR, metadata_file)],
-            },
+        },
 
         'debug': 1,
 
@@ -80,15 +80,15 @@ def create_conf(sp_host='sp.example.com', idp_hosts=['idp.example.com'],
              'company': 'Example Inc.',
              'email_address': 'administrative@sp.example.ccom',
              'contact_type': 'administrative'},
-            ],
+        ],
         'organization': {
             'name': [('Ejemplo S.A.', 'es'), ('Example Inc.', 'en')],
             'display_name': [('Ejemplo', 'es'), ('Example', 'en')],
             'url': [('http://www.example.es', 'es'),
                     ('http://www.example.com', 'en')],
-            },
+        },
         'valid_for': 24,
-        }
+    }
 
     if authn_requests_signed is not None:
         config['service']['sp']['authn_requests_signed'] = authn_requests_signed
@@ -98,10 +98,10 @@ def create_conf(sp_host='sp.example.com', idp_hosts=['idp.example.com'],
         config['service']['sp']['idp'][entity_id] = {
             'single_sign_on_service': {
                 saml2.BINDING_HTTP_REDIRECT: 'https://%s/simplesaml/saml2/idp/SSOService.php' % idp,
-                },
+            },
             'single_logout_service': {
                 saml2.BINDING_HTTP_REDIRECT: 'https://%s/simplesaml/saml2/idp/SingleLogoutService.php' % idp,
-                },
-            }
+            },
+        }
 
     return config

@@ -35,7 +35,7 @@ from saml2.config import SPConfig
 from saml2.ident import code, decode
 from saml2.mdstore import SourceNotFound
 from saml2.metadata import entity_descriptor
-from saml2.response import (RequestVersionTooLow, 
+from saml2.response import (RequestVersionTooLow,
                             SignatureError, StatusAuthnFailed, StatusError,
                             StatusNoAuthnContext, StatusRequestDenied,
                             UnsolicitedResponse)
@@ -84,7 +84,7 @@ class SPConfigMixin:
         conf = self.get_sp_config(request)
         state = StateCache(request.saml_session)
         client = Saml2Client(
-            conf, state_cache=state, 
+            conf, state_cache=state,
             identity_cache=IdentityCache(request.saml_session)
         )
         return state, client
@@ -124,7 +124,7 @@ class LoginView(SPConfigMixin, View):
         return next_path
 
     def get(self, request, *args, **kwargs):
-        logger.debug('Login process started')     
+        logger.debug('Login process started')
         next_path = self.get_next_path(request)
 
         # if the user is already authenticated that maybe because of two reasons:
@@ -142,8 +142,8 @@ class LoginView(SPConfigMixin, View):
                 return HttpResponseRedirect(next_path)
             logger.debug('User is already logged in')
             return render(request, self.authorization_error_template, {
-                    'came_from': next_path,
-                    })
+                'came_from': next_path,
+            })
 
         try:
             conf = self.get_sp_config(request)
@@ -169,20 +169,22 @@ class LoginView(SPConfigMixin, View):
                                                   urlquote(came_from, safe=''))
                 ds_url = '{0}?entityID={1}&return={2}&returnIDParam=idp'
                 ds_url = ds_url.format(discovery_service,
-                                       urlquote(getattr(conf,'entityid'), safe=''),
+                                       urlquote(
+                                           getattr(conf, 'entityid'), safe=''),
                                        urlquote(login_url, safe=''))
                 return HttpResponseRedirect(ds_url)
 
             elif len(configured_idps) > 1:
                 logger.debug('A discovery process trough WAYF page is needed')
                 return render(request, self.wayf_template, {
-                        'available_idps': configured_idps.items(),
-                        'came_from': next_path,
-                        })
+                    'available_idps': configured_idps.items(),
+                    'came_from': next_path,
+                })
 
         # is the first one, otherwise next logger message will print None
         if not configured_idps:
-            raise IdPConfigurationMissing(('IdP configuration is missing or its metadata is expired.'))
+            raise IdPConfigurationMissing(
+                ('IdP configuration is missing or its metadata is expired.'))
         if selected_idp is None:
             selected_idp = list(configured_idps.keys())[0]
 
@@ -192,18 +194,23 @@ class LoginView(SPConfigMixin, View):
         logger.debug('Trying binding %s for IDP %s', binding, selected_idp)
 
         # ensure our selected binding is supported by the IDP
-        supported_bindings = get_idp_sso_supported_bindings(selected_idp, config=conf)
+        supported_bindings = get_idp_sso_supported_bindings(
+            selected_idp, config=conf)
         if binding not in supported_bindings:
-            logger.debug('Binding %s not in IDP %s supported bindings: %s', binding, selected_idp, supported_bindings)
+            logger.debug('Binding %s not in IDP %s supported bindings: %s',
+                         binding, selected_idp, supported_bindings)
             if binding == BINDING_HTTP_POST:
-                logger.warning('IDP %s does not support %s,  trying %s', selected_idp, binding, BINDING_HTTP_REDIRECT)
+                logger.warning('IDP %s does not support %s,  trying %s',
+                               selected_idp, binding, BINDING_HTTP_REDIRECT)
                 binding = BINDING_HTTP_REDIRECT
             else:
-                logger.warning('IDP %s does not support %s,  trying %s', selected_idp, binding, BINDING_HTTP_POST)
+                logger.warning('IDP %s does not support %s,  trying %s',
+                               selected_idp, binding, BINDING_HTTP_POST)
                 binding = BINDING_HTTP_POST
             # if switched binding still not supported, give up
             if binding not in supported_bindings:
-                raise UnsupportedBinding('IDP %s does not support %s or %s', selected_idp, BINDING_HTTP_POST, BINDING_HTTP_REDIRECT)
+                raise UnsupportedBinding(
+                    'IDP %s does not support %s or %s', selected_idp, BINDING_HTTP_POST, BINDING_HTTP_REDIRECT)
 
         client = Saml2Client(conf)
         http_response = None
@@ -222,8 +229,10 @@ class LoginView(SPConfigMixin, View):
                 if sign_requests:
                     # do not sign the xml itself, instead use the sigalg to
                     # generate the signature as a URL param
-                    sig_alg_option_map = {'sha1': SIG_RSA_SHA1, 'sha256': SIG_RSA_SHA256}
-                    sig_alg_option = getattr(conf, '_sp_authn_requests_signed_alg', 'sha1')
+                    sig_alg_option_map = {
+                        'sha1': SIG_RSA_SHA1, 'sha256': SIG_RSA_SHA256}
+                    sig_alg_option = getattr(
+                        conf, '_sp_authn_requests_signed_alg', 'sha1')
                     kwargs["sigalg"] = sig_alg_option_map[sig_alg_option]
                 session_id, result = client.prepare_for_authenticate(
                     entityid=selected_idp, relay_state=next_path,
@@ -250,15 +259,16 @@ class LoginView(SPConfigMixin, View):
                     if isinstance(request_xml, AuthnRequest):
                         # request_xml will be an instance of AuthnRequest if the message is not signed
                         request_xml = str(request_xml)
-                    saml_request = base64.b64encode(bytes(request_xml, 'UTF-8')).decode('utf-8')
+                    saml_request = base64.b64encode(
+                        bytes(request_xml, 'UTF-8')).decode('utf-8')
 
                     http_response = render(request, self.post_binding_form_template, {
                         'target_url': location,
                         'params': {
                             'SAMLRequest': saml_request,
                             'RelayState': next_path,
-                            },
-                        })
+                        },
+                    })
                 except TemplateDoesNotExist:
                     pass
 
@@ -279,7 +289,8 @@ class LoginView(SPConfigMixin, View):
         # success, so save the session ID and return our response
         oq_cache = OutstandingQueriesCache(request.saml_session)
         oq_cache.set(session_id, next_path)
-        logger.debug('Saving the session_id "%s" in the OutstandingQueries cache', oq_cache.__dict__)
+        logger.debug(
+            'Saving the session_id "%s" in the OutstandingQueries cache', oq_cache.__dict__)
         return http_response
 
 
@@ -296,9 +307,11 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         """
 
         # Backwards compatibility: if a custom setting was defined, use that one
-        custom_failure_function = get_custom_setting('SAML_ACS_FAILURE_RESPONSE_FUNCTION')
+        custom_failure_function = get_custom_setting(
+            'SAML_ACS_FAILURE_RESPONSE_FUNCTION')
         if custom_failure_function:
-            failure_function = custom_failure_function if callable(custom_failure_function) else import_string(custom_failure_function)
+            failure_function = custom_failure_function if callable(
+                custom_failure_function) else import_string(custom_failure_function)
             return failure_function(request, exception, status, **kwargs)
 
         return render(request, 'djangosaml2/login_error.html', {'exception': exception}, status=status)
@@ -311,8 +324,10 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
             logger.warning('Missing "SAMLResponse" parameter in POST data.')
             return HttpResponseBadRequest('Missing "SAMLResponse" parameter in POST data.')
 
-        attribute_mapping = attribute_mapping or get_custom_setting('SAML_ATTRIBUTE_MAPPING', {'uid': ('username', )})
-        create_unknown_user = create_unknown_user or get_custom_setting('SAML_CREATE_UNKNOWN_USER', True)
+        attribute_mapping = attribute_mapping or get_custom_setting(
+            'SAML_ATTRIBUTE_MAPPING', {'uid': ('username', )})
+        create_unknown_user = create_unknown_user or get_custom_setting(
+            'SAML_CREATE_UNKNOWN_USER', True)
         conf = self.get_sp_config(request)
 
         identity_cache = IdentityCache(request.saml_session)
@@ -320,7 +335,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         oq_cache = OutstandingQueriesCache(request.saml_session)
         oq_cache.sync()
         outstanding_queries = oq_cache.outstanding_queries()
-                
+
         _exception = None
         try:
             response = client.parse_authn_request_response(request.POST['SAMLResponse'],
@@ -331,32 +346,38 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
             logger.exception("Error processing SAML Assertion.")
         except ResponseLifetimeExceed as e:
             _exception = e
-            logger.info(("SAML Assertion is no longer valid. Possibly caused by network delay or replay attack."), exc_info=True)
+            logger.info(
+                ("SAML Assertion is no longer valid. Possibly caused by network delay or replay attack."), exc_info=True)
         except SignatureError as e:
             _exception = e
             logger.info("Invalid or malformed SAML Assertion.", exc_info=True)
         except StatusAuthnFailed as e:
             _exception = e
-            logger.info("Authentication denied for user by IdP.", exc_info=True)
+            logger.info("Authentication denied for user by IdP.",
+                        exc_info=True)
         except StatusRequestDenied as e:
             _exception = e
             logger.warning("Authentication interrupted at IdP.", exc_info=True)
         except StatusNoAuthnContext as e:
             _exception = e
-            logger.warning("Missing Authentication Context from IdP.", exc_info=True)
+            logger.warning(
+                "Missing Authentication Context from IdP.", exc_info=True)
         except MissingKey as e:
             _exception = e
-            logger.exception("SAML Identity Provider is not configured correctly: certificate key is missing!")
+            logger.exception(
+                "SAML Identity Provider is not configured correctly: certificate key is missing!")
         except UnsolicitedResponse as e:
             _exception = e
-            logger.exception("Received SAMLResponse when no request has been made.")
+            logger.exception(
+                "Received SAMLResponse when no request has been made.")
         except RequestVersionTooLow as e:
             _exception = e
-            logger.exception("Received SAMLResponse have a deprecated SAML2 VERSION.")
+            logger.exception(
+                "Received SAMLResponse have a deprecated SAML2 VERSION.")
         except Exception as e:
             _exception = e
             logger.exception("SAMLResponse Error")
-        
+
         if _exception:
             return self.handle_acs_failure(request, exception=_exception)
         elif response is None:
@@ -373,14 +394,16 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
             attribute_mapping = attribute_mapping()
         if callable(create_unknown_user):
             create_unknown_user = create_unknown_user()
-        
-        logger.debug('Trying to authenticate the user. Session info: %s', session_info)
+
+        logger.debug(
+            'Trying to authenticate the user. Session info: %s', session_info)
         user = auth.authenticate(request=request,
                                  session_info=session_info,
                                  attribute_mapping=attribute_mapping,
                                  create_unknown_user=create_unknown_user)
         if user is None:
-            logger.warning("Could not authenticate user received in SAML Assertion. Session info: %s", session_info)
+            logger.warning(
+                "Could not authenticate user received in SAML Assertion. Session info: %s", session_info)
             return self.handle_acs_failure(request, exception=PermissionDenied('No user could be authenticated.'),
                                            session_info=session_info)
 
@@ -392,7 +415,8 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         self.customize_session(user, session_info)
 
         relay_state = self.build_relay_state()
-        custom_redirect_url = self.custom_redirect(user, relay_state, session_info)
+        custom_redirect_url = self.custom_redirect(
+            user, relay_state, session_info)
         if custom_redirect_url:
             return HttpResponseRedirect(custom_redirect_url)
         relay_state = validate_referral_url(request, relay_state)
@@ -406,7 +430,8 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
     def build_relay_state(self) -> str:
         """ The relay state is a URL used to redirect the user to the view where they came from.
         """
-        default_relay_state = get_custom_setting('ACS_DEFAULT_REDIRECT_URL', settings.LOGIN_REDIRECT_URL)
+        default_relay_state = get_custom_setting(
+            'ACS_DEFAULT_REDIRECT_URL', settings.LOGIN_REDIRECT_URL)
         relay_state = self.request.POST.get('RelayState', '/')
         relay_state = self.customize_relay_state(relay_state)
         if not relay_state:
@@ -441,7 +466,8 @@ class EchoAttributesView(LoginRequiredMixin, SPConfigMixin, View):
 
         subject_id = _get_subject_id(request.saml_session)
         try:
-            identity = client.users.get_identity(subject_id, check_not_on_or_after=False)
+            identity = client.users.get_identity(
+                subject_id, check_not_on_or_after=False)
         except AttributeError:
             return HttpResponse("No active SAML identity found. Are you sure you have logged in via SAML?")
 
@@ -460,12 +486,14 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
 
         subject_id = _get_subject_id(request.saml_session)
         if subject_id is None:
-            logger.warning('The session does not contain the subject id for user %s', request.user)
+            logger.warning(
+                'The session does not contain the subject id for user %s', request.user)
 
         try:
             result = client.global_logout(subject_id)
         except LogoutError as exp:
-            logger.exception('Error Handled - SLO not supported by IDP: {}'.format(exp))
+            logger.exception(
+                'Error Handled - SLO not supported by IDP: {}'.format(exp))
             auth.logout(request)
             state.sync()
             return HttpResponseRedirect(getattr(settings, 'LOGOUT_REDIRECT_URL', '/'))
@@ -474,21 +502,25 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
         state.sync()
 
         if not result:
-            logger.error("Looks like the user %s is not logged in any IdP/AA", subject_id)
+            logger.error(
+                "Looks like the user %s is not logged in any IdP/AA", subject_id)
             return HttpResponseBadRequest("You are not logged in any IdP/AA")
 
         if len(result) > 1:
-            logger.error('Sorry, I do not know how to logout from several sources. I will logout just from the first one')
+            logger.error(
+                'Sorry, I do not know how to logout from several sources. I will logout just from the first one')
 
         for entityid, logout_info in result.items():
             if isinstance(logout_info, tuple):
                 binding, http_info = logout_info
                 if binding == BINDING_HTTP_POST:
-                    logger.debug('Returning form to the IdP to continue the logout process')
+                    logger.debug(
+                        'Returning form to the IdP to continue the logout process')
                     body = ''.join(http_info['data'])
                     return HttpResponse(body)
                 elif binding == BINDING_HTTP_REDIRECT:
-                    logger.debug('Redirecting to the IdP to continue the logout process')
+                    logger.debug(
+                        'Redirecting to the IdP to continue the logout process')
                     return HttpResponseRedirect(get_location(http_info))
                 else:
                     logger.error('Unknown binding: %s', binding)
@@ -496,7 +528,8 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
             # We must have had a soap logout
             return finish_logout(request, logout_info)
 
-        logger.error('Could not logout because there only the HTTP_REDIRECT is supported')
+        logger.error(
+            'Could not logout because there only the HTTP_REDIRECT is supported')
         return HttpResponseServerError('Logout Binding not supported')
 
 
@@ -528,10 +561,12 @@ class LogoutView(SPConfigMixin, View):
         if 'SAMLResponse' in data:  # we started the logout
             logger.debug('Receiving a logout response from the IdP')
             try:
-                response = client.parse_logout_request_response(data['SAMLResponse'], binding)
+                response = client.parse_logout_request_response(
+                    data['SAMLResponse'], binding)
             except StatusError as e:
                 response = None
-                logger.warning("Error logging out from remote provider: " + str(e))
+                logger.warning(
+                    "Error logging out from remote provider: " + str(e))
             state.sync()
             return finish_logout(request, response)
 
@@ -571,7 +606,8 @@ def finish_logout(request, response, next_page=None):
     if (getattr(settings, 'SAML_IGNORE_LOGOUT_ERRORS', False) or (response and response.status_ok())):
         if not next_page:
             next_page = getattr(settings, 'LOGOUT_REDIRECT_URL', '/')
-        logger.debug('Performing django logout with a next_page of %s', next_page)
+        logger.debug(
+            'Performing django logout with a next_page of %s', next_page)
         return AuthLogoutView.as_view()(request, next_page=next_page)
     logger.error('Unknown error during the logout')
     return render(request, "djangosaml2/logout_error.html", {})

@@ -49,7 +49,8 @@ class OutstandingQueriesCache(object):
     """
 
     def __init__(self, django_session):
-        self._db = DjangoSessionCacheAdapter(django_session, '_outstanding_queries')
+        self._db = DjangoSessionCacheAdapter(
+            django_session, '_outstanding_queries')
 
     def outstanding_queries(self):
         return self._db._get_objects()

@@ -54,9 +54,11 @@ class Saml2Backend(ModelBackend):
             try:
                 return apps.get_model(settings.SAML_USER_MODEL)
             except LookupError:
-                raise ImproperlyConfigured(f"Model '{settings.SAML_USER_MODEL}' could not be loaded")
+                raise ImproperlyConfigured(
+                    f"Model '{settings.SAML_USER_MODEL}' could not be loaded")
             except ValueError:
-                raise ImproperlyConfigured(f"Model was specified as '{settings.SAML_USER_MODEL}', but it must be of the form 'app_label.model_name'")
+                raise ImproperlyConfigured(
+                    f"Model was specified as '{settings.SAML_USER_MODEL}', but it must be of the form 'app_label.model_name'")
 
         return auth.get_user_model()
 
@@ -77,14 +79,16 @@ class Saml2Backend(ModelBackend):
         # Lookup value
         if getattr(settings, 'SAML_USE_NAME_ID_AS_USERNAME', False):
             if session_info.get('name_id'):
-                logger.debug('name_id: %s', session_info['name_id'])
+                logger.debug(f"name_id: {session_info['name_id']}")
                 user_lookup_value = session_info['name_id'].text
             else:
-                logger.error('The nameid is not available. Cannot find user without a nameid.')
+                logger.error(
+                    'The nameid is not available. Cannot find user without a nameid.')
                 user_lookup_value = None
         else:
             # Obtain the value of the custom attribute to use
-            user_lookup_value = self._get_attribute_value(user_lookup_key, attributes, attribute_mapping)
+            user_lookup_value = self._get_attribute_value(
+                user_lookup_key, attributes, attribute_mapping)
 
         return user_lookup_key, self.clean_user_main_attribute(user_lookup_value)
 
@@ -114,14 +118,15 @@ class Saml2Backend(ModelBackend):
         idp_entityid = session_info['issuer']
 
         attributes = self.clean_attributes(session_info['ava'], idp_entityid)
-        
-        logger.debug('attributes: %s', attributes)
+
+        logger.debug(f'attributes: {attributes}')
 
         if not self.is_authorized(attributes, attribute_mapping, idp_entityid):
             logger.error('Request not authorized')
             return None
 
-        user_lookup_key, user_lookup_value = self._extract_user_identifier_params(session_info, attributes, attribute_mapping)
+        user_lookup_key, user_lookup_value = self._extract_user_identifier_params(
+            session_info, attributes, attribute_mapping)
         if not user_lookup_value:
             logger.error('Could not determine user identifier')
             return None
@@ -133,7 +138,8 @@ class Saml2Backend(ModelBackend):
 
         # Update user with new attributes from incoming request
         if user is not None:
-            user = self._update_user(user, attributes, attribute_mapping, force_save=created)
+            user = self._update_user(
+                user, attributes, attribute_mapping, force_save=created)
 
         return user
 
@@ -157,8 +163,7 @@ class Saml2Backend(ModelBackend):
             attr_value_list = attributes.get(saml_attr)
             if not attr_value_list:
                 logger.debug(
-                    'Could not find value for "%s", not updating fields "%s"',
-                    saml_attr, django_attrs)
+                    f'Could not find value for "{saml_attr}", not updating fields "{django_attrs}"')
                 continue
 
             for attr in django_attrs:
@@ -167,11 +172,13 @@ class Saml2Backend(ModelBackend):
                     if callable(user_attr):
                         modified = user_attr(attr_value_list)
                     else:
-                        modified = set_attribute(user, attr, attr_value_list[0])
+                        modified = set_attribute(
+                            user, attr, attr_value_list[0])
 
                     has_updated_fields = has_updated_fields or modified
                 else:
-                    logger.debug('Could not find attribute "%s" on user "%s"', attr, user)
+                    logger.debug(
+                        f'Could not find attribute "{attr}" on user "{user}"')
 
         if has_updated_fields or force_save:
             user = self.save_user(user)
@@ -195,9 +202,9 @@ class Saml2Backend(ModelBackend):
         return main_attribute
 
     def get_or_create_user(self,
-            user_lookup_key: str, user_lookup_value: Any, create_unknown_user: bool,
-            idp_entityid: str, attributes: dict, attribute_mapping: dict, request
-        ) -> Tuple[Optional[settings.AUTH_USER_MODEL], bool]:
+                           user_lookup_key: str, user_lookup_value: Any, create_unknown_user: bool,
+                           idp_entityid: str, attributes: dict, attribute_mapping: dict, request
+                           ) -> Tuple[Optional[settings.AUTH_USER_MODEL], bool]:
         """ Look up the user to authenticate. If he doesn't exist, this method creates him (if so desired).
             The default implementation looks only at the user_identifier. Override this method in order to do more complex behaviour,
             e.g. customize this per IdP.
@@ -215,15 +222,17 @@ class Saml2Backend(ModelBackend):
         try:
             user = UserModel.objects.get(**user_query_args)
         except MultipleObjectsReturned:
-            logger.error("Multiple users match, model: %s, lookup: %s", UserModel._meta, user_query_args)
+            logger.error("Multiple users match, model: %s, lookup: %s",
+                         UserModel._meta, user_query_args)
         except UserModel.DoesNotExist:
             # Create new one if desired by settings
             if create_unknown_user:
-                user = UserModel(**{ user_lookup_key: user_lookup_value })
+                user = UserModel(**{user_lookup_key: user_lookup_value})
                 created = True
-                logger.debug('New user created: %s', user)
+                logger.debug(f'New user created: {user}')
             else:
-                logger.error('The user does not exist, model: %s, lookup: %s', UserModel._meta, user_query_args)
+                logger.error(
+                    f'The user does not exist, model: {UserModel._meta}, lookup: {user_query_args}')
 
         return user, created
 
@@ -236,7 +245,7 @@ class Saml2Backend(ModelBackend):
         if is_new_instance:
             logger.debug('New user created')
         else:
-            logger.debug('User %s updated with incoming attributes', user)
+            logger.debug(f'User {user} updated with incoming attributes')
 
         return user
 
@@ -245,34 +254,42 @@ class Saml2Backend(ModelBackend):
     # ############################################
 
     def get_attribute_value(self, django_field, attributes, attribute_mapping):
-        warnings.warn("get_attribute_value() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
+        warnings.warn(
+            "get_attribute_value() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
         return self._get_attribute_value(django_field, attributes, attribute_mapping)
 
     def get_django_user_main_attribute(self):
-        warnings.warn("get_django_user_main_attribute() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
+        warnings.warn(
+            "get_django_user_main_attribute() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
         return self._user_lookup_attribute
 
     def get_django_user_main_attribute_lookup(self):
-        warnings.warn("get_django_user_main_attribute_lookup() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
+        warnings.warn(
+            "get_django_user_main_attribute_lookup() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
         return getattr(settings, 'SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP', '')
 
     def get_user_query_args(self, main_attribute):
-        warnings.warn("get_user_query_args() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
+        warnings.warn(
+            "get_user_query_args() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
         return {self.get_django_user_main_attribute() + self.get_django_user_main_attribute_lookup()}
-    
+
     def configure_user(self, user, attributes, attribute_mapping):
-        warnings.warn("configure_user() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
+        warnings.warn(
+            "configure_user() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
         return self._update_user(user, attributes, attribute_mapping)
 
     def update_user(self, user, attributes, attribute_mapping, force_save=False):
-        warnings.warn("update_user() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
+        warnings.warn(
+            "update_user() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
         return self._update_user(user, attributes, attribute_mapping)
 
     def _set_attribute(self, obj, attr, value):
-        warnings.warn("_set_attribute() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
+        warnings.warn(
+            "_set_attribute() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
         return set_attribute(obj, attr, value)
 
 
 def get_saml_user_model():
-    warnings.warn("_set_attribute() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
+    warnings.warn(
+        "_set_attribute() is deprecated, look at the Saml2Backend on how to subclass it", DeprecationWarning)
     return Saml2Backend()._user_model

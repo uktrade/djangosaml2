@@ -81,7 +81,8 @@ def validate_referral_url(request, url):
     # hostnames for post-login redirects, much like one would specify ALLOWED_HOSTS .
     # If this setting is absent, the default is to use the hostname that was used for the current
     # request.
-    saml_allowed_hosts = set(getattr(settings, 'SAML_ALLOWED_HOSTS', [request.get_host()]))
+    saml_allowed_hosts = set(
+        getattr(settings, 'SAML_ALLOWED_HOSTS', [request.get_host()]))
 
     if not is_safe_url(url=url, allowed_hosts=saml_allowed_hosts):
         return settings.LOGIN_REDIRECT_URL
@@ -96,9 +97,11 @@ def saml2_from_httpredirect_request(url):
     deflated_saml2req = zlib.decompress(inflated_saml2req, -15)
     return deflated_saml2req
 
+
 def get_session_id_from_saml2(saml2_xml):
     saml2_xml = saml2_xml.encode() if isinstance(saml2_xml, str) else saml2_xml
     return re.findall(b'ID="([a-z0-9\-]*)"', saml2_xml, re.I)[0].decode()
+
 
 def get_subject_id_from_saml2(saml2_xml):
     saml2_xml = saml2_xml if isinstance(saml2_xml, str) else saml2_xml.decode()
