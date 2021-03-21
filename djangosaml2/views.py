@@ -439,9 +439,10 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
     def build_relay_state(self) -> str:
         """ The relay state is a URL used to redirect the user to the view where they came from.
         """
+        login_redirect_url = get_custom_setting('LOGIN_REDIRECT_URL', '/')
         default_relay_state = get_custom_setting(
-            'ACS_DEFAULT_REDIRECT_URL', settings.LOGIN_REDIRECT_URL)
-        relay_state = self.request.POST.get('RelayState', '/')
+            'ACS_DEFAULT_REDIRECT_URL', login_redirect_url)
+        relay_state = self.request.POST.get('RelayState', default_relay_state)
         relay_state = self.customize_relay_state(relay_state)
         if not relay_state:
             logger.warning('The RelayState parameter exists but is empty')
@@ -505,7 +506,7 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
                 'Error Handled - SLO not supported by IDP: {}'.format(exp))
             auth.logout(request)
             state.sync()
-            return HttpResponseRedirect(getattr(settings, 'LOGOUT_REDIRECT_URL', '/'))
+            return self.handle_unsupported_slo_exception(request, exp)
 
         auth.logout(request)
         state.sync()
@@ -540,6 +541,15 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
         logger.error(
             'Could not logout because there only the HTTP_REDIRECT is supported')
         return HttpResponseServerError('Logout Binding not supported')
+
+    def handle_unsupported_slo_exception(self, request, exception, *args, **kwargs):
+        """ Subclasses may override this method to implement custom logic for
+            handling logout errors. Redirects to LOGOUT_REDIRECT_URL by default.
+
+            For example, a site may want to perform additional logic and redirect
+            users somewhere other than the LOGOUT_REDIRECT_URL.
+        """
+        return HttpResponseRedirect(getattr(settings, 'LOGOUT_REDIRECT_URL', '/'))
 
 
 @method_decorator(csrf_exempt, name='dispatch')
