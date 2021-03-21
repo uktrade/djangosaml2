@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.8]
-        django-version: ["2.2", "3.0", "master"]
+        django-version: ["2.2", "3.0"]
 
     steps:
     - uses: actions/checkout@v2
