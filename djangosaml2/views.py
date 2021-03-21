@@ -302,6 +302,9 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         though some implementations may instead register their own subclasses of Saml2Backend.
     """
 
+    def custom_validation(self, response):
+        pass
+
     def handle_acs_failure(self, request, exception=None, status=403, **kwargs):
         """ Error handler if the login attempt fails. Override this to customize the error response.
         """
@@ -383,6 +386,12 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         elif response is None:
             logger.warning("Invalid SAML Assertion received (unknown error).")
             return self.handle_acs_failure(request, status=400, exception=SuspiciousOperation('Unknown SAML2 error'))
+
+        try:
+            self.custom_validation(response)
+        except Exception as e:
+            logger.warning("SAML Response validation error: {e}")
+            return self.handle_acs_failure(request, status=400, exception=SuspiciousOperation('SAML2 validation error'))
 
         session_id = response.session_id()
         oq_cache.delete(session_id)
