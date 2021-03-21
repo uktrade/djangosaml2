@@ -390,7 +390,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         try:
             self.custom_validation(response)
         except Exception as e:
-            logger.warning("SAML Response validation error: {e}")
+            logger.warning(f"SAML Response validation error: {e}")
             return self.handle_acs_failure(request, status=400, exception=SuspiciousOperation('SAML2 validation error'))
 
         session_id = response.session_id()
