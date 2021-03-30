@@ -21,6 +21,7 @@ from django.contrib.auth.models import User as DjangoUserModel
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 from djangosaml2.backends import Saml2Backend, set_attribute
+from saml2.saml import Assertion
 
 from testprofiles.models import TestUser
 
@@ -104,7 +105,7 @@ class Saml2BackendTests(TestCase):
                 self.assertEqual(lookup_value, None)
 
     def test_is_authorized(self):
-        self.assertTrue(self.backend.is_authorized({}, {}, ''))
+        self.assertTrue(self.backend.is_authorized({}, {}, '', None))
 
     def test_clean_attributes(self):
         attributes = {'random': 'dummy', 'value': 123}
@@ -333,9 +334,9 @@ class Saml2BackendTests(TestCase):
 class CustomizedBackend(Saml2Backend):
     """ Override the available methods with some customized implementation to test customization
     """
-    def is_authorized(self, attributes, attribute_mapping, idp_entityid: str, **kwargs):
+    def is_authorized(self, attributes, attribute_mapping, idp_entityid: str, assertion, **kwargs):
         ''' Allow only staff users from the IDP '''
-        return attributes.get('is_staff', (None, ))[0] == True
+        return attributes.get('is_staff', (None, ))[0] == True and getattr(assertion, 'id', None) != None
     
     def clean_attributes(self, attributes: dict, idp_entityid: str, **kwargs) -> dict:
         ''' Keep only age attribute '''
@@ -368,9 +369,12 @@ class CustomizedSaml2BackendTests(Saml2BackendTests):
             'cn': ('John', ),
             'sn': ('Doe', ),
             }
-        self.assertFalse(self.backend.is_authorized(attributes, attribute_mapping, ''))
+        assertion = Assertion()
+        self.assertFalse(self.backend.is_authorized(attributes, attribute_mapping, '', assertion))
         attributes['is_staff'] = (True, )
-        self.assertTrue(self.backend.is_authorized(attributes, attribute_mapping, ''))
+        self.assertFalse(self.backend.is_authorized(attributes, attribute_mapping, '', assertion))
+        assertion.id = 'abcdefg12345'
+        self.assertTrue(self.backend.is_authorized(attributes, attribute_mapping, '', assertion))
 
     def test_clean_attributes(self):
         attributes = {'random': 'dummy', 'value': 123, 'age': '28'}
@@ -396,6 +400,7 @@ class CustomizedSaml2BackendTests(Saml2BackendTests):
             'age': ('28', ),
             'is_staff': (True, ),
             }
+        assertion = Assertion(id='abcdefg12345')
 
         self.assertEqual(self.user.age, '')
         self.assertEqual(self.user.is_staff, False)
@@ -409,6 +414,7 @@ class CustomizedSaml2BackendTests(Saml2BackendTests):
             None,
             session_info={'random': 'content'},
             attribute_mapping=attribute_mapping,
+            assertion=assertion,
         )
         self.assertIsNone(user)
 
@@ -417,6 +423,7 @@ class CustomizedSaml2BackendTests(Saml2BackendTests):
                 None,
                 session_info={'ava': attributes, 'issuer': 'dummy_entity_id'},
                 attribute_mapping=attribute_mapping,
+                assertion=assertion,
             )
             self.assertIsNone(user)
 
@@ -425,6 +432,7 @@ class CustomizedSaml2BackendTests(Saml2BackendTests):
             None,
             session_info={'ava': attributes, 'issuer': 'dummy_entity_id'},
             attribute_mapping=attribute_mapping,
+            assertion=assertion,
         )
         self.assertIsNone(user)
 
@@ -433,6 +441,7 @@ class CustomizedSaml2BackendTests(Saml2BackendTests):
             None,
             session_info={'ava': attributes, 'issuer': 'dummy_entity_id'},
             attribute_mapping=attribute_mapping,
+            assertion=assertion,
         )
 
         self.assertEqual(user, self.user)
