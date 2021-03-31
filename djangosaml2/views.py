@@ -52,7 +52,7 @@ from .cache import IdentityCache, OutstandingQueriesCache, StateCache
 from .conf import get_config
 from .exceptions import IdPConfigurationMissing
 from .overrides import Saml2Client
-from .utils import (available_idps, get_custom_setting,
+from .utils import (add_idp_hinting, available_idps, get_custom_setting,
                     get_idp_sso_supported_bindings, get_location,
                     validate_referral_url)
 
@@ -307,7 +307,10 @@ class LoginView(SPConfigMixin, View):
             f'Saving the session_id "{oq_cache.__dict__}" '
             'in the OutstandingQueries cache',
         )
-        return http_response
+
+        # idp hinting support, add idphint url parameter if present in this request
+        response = add_idp_hinting(request, http_response) or http_response
+        return response
 
 
 @method_decorator(csrf_exempt, name='dispatch')
