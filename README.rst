@@ -128,6 +128,15 @@ may be specified by the client - typically with the ?next= parameter.)
 In the absence of a ?next= parameter, the LOGIN_REDIRECT_URL setting will be used (assuming the destination hostname
 either matches the output of get_host() or is included in the SAML_ALLOWED_HOSTS setting)
 
+Preferred sso binding
+---------------------
+Use the following setting to choose your preferred binding for SP initiated sso requests::
+
+  SAML_DEFAULT_BINDING
+
+For example::
+
+  SAML_DEFAULT_BINDING = saml2.BINDING_HTTP_POST
 
 Preferred Logout binding
 ------------------------
@@ -155,12 +164,35 @@ Idp's like Okta require a signed logout response to validate and logout a user. 
 
 Discovery Service
 -----------------
-If you want to use a SAML Discovery Service, all you need is adding:
+If you want to use a SAML Discovery Service, all you need is adding::
 
   SAML2_DISCO_URL = 'https://your.ds.example.net/'
 
 Of course, with the real URL of your preferred Discovery Service.
 
+
+Idp hinting
+-----------
+If the SP uses an AIM Proxy it is possible to suggest the authentication IDP by adopting the _idphint_ parameter. The name of the `idphint` parameter is default, but it can also be changed using this parameter::
+
+  SAML2_IDPHINT_PARAM = 'idphint'
+
+This will ensure that the user will not get a possible discovery service page for the selection of the IdP to use for the SSO.
+When Djagosaml2 receives an HTTP request at the resource, web path, configured for the saml2 login, it will detect the presence of the `idphint` parameter. If this is present, the authentication request will report this URL parameter within the http request relating to the SAML2 SSO binding.
+
+For example::
+
+  import requests
+  import urllib
+  idphint = {'idphint': [
+               urllib.parse.quote_plus(b'https://that.idp.example.org/metadata'),
+               urllib.parse.quote_plus(b'https://another.entitydi.org')]
+            }
+  param = urllib.parse.urlencode(idphint)
+  # param is "idphint=%5B%27https%253A%252F%252Fthat.idp.example.org%252Fmetadata%27%2C+%27https%253A%252F%252Fanother.entitydi.org%27%5D"
+  requests.get(f'http://djangosaml2.sp.fqdn.org/saml2/login/?{param}')
+
+see AARC Blueprint specs `here <https://zenodo.org/record/4596667/files/AARC-G061-A_specification_for_IdP_hinting.pdf>`_.
 
 Changes in the urls.py file
 ---------------------------

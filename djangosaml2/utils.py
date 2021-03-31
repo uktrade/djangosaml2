@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import base64
+import logging
 import re
 import urllib
 import zlib
@@ -19,9 +20,13 @@ from typing import Optional
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpResponseRedirect
 from django.utils.http import is_safe_url
 from saml2.config import SPConfig
 from saml2.s_utils import UnknownSystemEntity
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_custom_setting(name: str, default=None):
@@ -106,3 +111,52 @@ def get_session_id_from_saml2(saml2_xml):
 def get_subject_id_from_saml2(saml2_xml):
     saml2_xml = saml2_xml if isinstance(saml2_xml, str) else saml2_xml.decode()
     re.findall('">([a-z0-9]+)</saml:NameID>', saml2_xml)[0]
+
+def add_param_in_url(url:str, param_key:str, param_value:str):
+    params = list(url.split('?'))
+    params.append(f'{param_key}={param_value}')
+    new_url = params[0] + '?' +''.join(params[1:])
+    return new_url
+
+def add_idp_hinting(request, http_response) -> bool:
+    idphin_param = getattr(settings, 'SAML2_IDPHINT_PARAM', 'idphint')
+    params = urllib.parse.urlencode(request.GET)
+
+    if idphin_param not in request.GET.keys():
+        return False
+
+    idphint = request.GET[idphin_param]
+    # validation : TODO -> improve!
+    if idphint[0:4] != 'http':
+        logger.warning(
+            f'Idp hinting: "{idphint}" doesn\'t contain a valid value.'
+            'idphint paramenter ignored.'
+        )
+        return False
+
+    if http_response.status_code in (302, 303):
+        # redirect binding
+        # urlp = urllib.parse.urlparse(http_response.url)
+        new_url = add_param_in_url(http_response.url,
+                                   idphin_param, idphint)
+        return HttpResponseRedirect(new_url)
+
+    elif http_response.status_code == 200:
+        # post binding
+        res = re.search(r'action="(?P<url>[a-z0-9\:\/\_\-\.]*)"',
+                        http_response.content.decode(), re.I)
+        if not res:
+            return False
+        orig_url = res.groupdict()['url']
+        #
+        new_url = add_param_in_url(orig_url, idphin_param, idphint)
+        content = http_response.content.decode()\
+                               .replace(orig_url, new_url)\
+                               .encode()
+        return HttpResponse(content)
+
+    else:
+        logger.warning(
+            f'Idp hinting: cannot detect request type [{http_response.status_code}]'
+        )
+    return False

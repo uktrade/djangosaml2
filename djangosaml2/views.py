@@ -15,6 +15,7 @@
 
 import base64
 import logging
+import saml2
 
 from django.conf import settings
 from django.contrib import auth
@@ -31,7 +32,6 @@ from django.utils.http import urlquote
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 from django.utils.module_loading import import_string
-from saml2 import BINDING_HTTP_POST, BINDING_HTTP_REDIRECT
 from saml2.client_base import LogoutError
 from saml2.config import SPConfig
 from saml2.ident import code, decode
@@ -52,7 +52,7 @@ from .cache import IdentityCache, OutstandingQueriesCache, StateCache
 from .conf import get_config
 from .exceptions import IdPConfigurationMissing
 from .overrides import Saml2Client
-from .utils import (available_idps, get_custom_setting,
+from .utils import (add_idp_hinting, available_idps, get_custom_setting,
                     get_idp_sso_supported_bindings, get_location,
                     validate_referral_url)
 
@@ -191,61 +191,73 @@ class LoginView(SPConfigMixin, View):
             selected_idp = list(configured_idps.keys())[0]
 
         # choose a binding to try first
-        sign_requests = getattr(conf, '_sp_authn_requests_signed', False)
-        binding = BINDING_HTTP_POST if sign_requests else BINDING_HTTP_REDIRECT
-        logger.debug('Trying binding %s for IDP %s', binding, selected_idp)
+        binding = getattr(settings, 'SAML_DEFAULT_BINDING', saml2.BINDING_HTTP_POST)
+        logger.debug(f'Trying binding {binding} for IDP {selected_idp}')
 
         # ensure our selected binding is supported by the IDP
         supported_bindings = get_idp_sso_supported_bindings(
             selected_idp, config=conf)
+
         if binding not in supported_bindings:
-            logger.debug('Binding %s not in IDP %s supported bindings: %s',
-                         binding, selected_idp, supported_bindings)
-            if binding == BINDING_HTTP_POST:
-                logger.warning('IDP %s does not support %s,  trying %s',
-                               selected_idp, binding, BINDING_HTTP_REDIRECT)
-                binding = BINDING_HTTP_REDIRECT
+            logger.debug(
+                f'Binding {binding} not in IDP {selected_idp} '
+                f'supported bindings: {supported_bindings}. Trying to switch ...',
+            )
+            if binding == saml2.BINDING_HTTP_POST:
+                logger.warning(
+                    f'IDP {selected_idp} does not support {binding} '
+                    f'trying {saml2.BINDING_HTTP_REDIRECT}',
+                )
+                binding = saml2.BINDING_HTTP_REDIRECT
             else:
-                logger.warning('IDP %s does not support %s,  trying %s',
-                               selected_idp, binding, BINDING_HTTP_POST)
-                binding = BINDING_HTTP_POST
+                logger.warning(
+                    f'IDP {selected_idp} does not support {binding} '
+                    f'trying {saml2.BINDING_HTTP_POST}',
+                )
+                binding = saml2.BINDING_HTTP_POST
             # if switched binding still not supported, give up
             if binding not in supported_bindings:
                 raise UnsupportedBinding(
-                    'IDP %s does not support %s or %s', selected_idp, BINDING_HTTP_POST, BINDING_HTTP_REDIRECT)
+                    f'IDP {selected_idp} does not support '
+                    f'{saml2.BINDING_HTTP_POST} and {saml2.BINDING_HTTP_REDIRECT}'
+                )
 
         client = Saml2Client(conf)
         http_response = None
 
-        kwargs = {}
+        # SSO options
+        sign_requests = getattr(conf, '_sp_authn_requests_signed', False)
+        sso_kwargs = {}
+        if sign_requests:
+            sso_kwargs["sigalg"] = settings.SAML_CONFIG['service']['sp']\
+                                           .get('signing_algorithm',
+                                                saml2.xmldsig.SIG_RSA_SHA256)
+            sso_kwargs["digest_alg"] = settings.SAML_CONFIG['service']['sp']\
+                                           .get('digest_algorithm',
+                                                saml2.xmldsig.DIGEST_SHA256)
+
         # pysaml needs a string otherwise: "cannot serialize True (type bool)"
         if getattr(conf, '_sp_force_authn', False):
-            kwargs['force_authn'] = "true"
+            sso_kwargs['force_authn'] = "true"
         if getattr(conf, '_sp_allow_create', False):
-            kwargs['allow_create'] = "true"
+            sso_kwargs['allow_create'] = "true"
 
-        logger.debug('Redirecting user to the IdP via %s binding.', binding)
-        if binding == BINDING_HTTP_REDIRECT:
+        # custom nsprefixes
+        sso_kwargs['nsprefix'] = get_namespace_prefixes()
+
+        logger.debug(f'Redirecting user to the IdP via {binding} binding.')
+        if binding == saml2.BINDING_HTTP_REDIRECT:
             try:
-                nsprefix = get_namespace_prefixes()
-                if sign_requests:
-                    # do not sign the xml itself, instead use the sigalg to
-                    # generate the signature as a URL param
-                    sig_alg_option_map = {
-                        'sha1': SIG_RSA_SHA1, 'sha256': SIG_RSA_SHA256}
-                    sig_alg_option = getattr(
-                        conf, '_sp_authn_requests_signed_alg', 'sha1')
-                    kwargs["sigalg"] = sig_alg_option_map[sig_alg_option]
                 session_id, result = client.prepare_for_authenticate(
                     entityid=selected_idp, relay_state=next_path,
-                    binding=binding, sign=sign_requests, nsprefix=nsprefix,
-                    **kwargs)
+                    binding=binding, sign=sign_requests,
+                    **sso_kwargs)
             except TypeError as e:
                 logger.error('Unable to know which IdP to use')
                 return HttpResponse(str(e))
             else:
                 http_response = HttpResponseRedirect(get_location(result))
-        elif binding == BINDING_HTTP_POST:
+        elif binding == saml2.BINDING_HTTP_POST:
             if self.post_binding_form_template:
                 # get request XML to build our own html based on the template
                 try:
@@ -256,7 +268,7 @@ class LoginView(SPConfigMixin, View):
                 session_id, request_xml = client.create_authn_request(
                     location,
                     binding=binding,
-                    **kwargs)
+                    **sso_kwargs)
                 try:
                     if isinstance(request_xml, AuthnRequest):
                         # request_xml will be an instance of AuthnRequest if the message is not signed
@@ -271,11 +283,11 @@ class LoginView(SPConfigMixin, View):
                             'RelayState': next_path,
                         },
                     })
-                except TemplateDoesNotExist:
-                    pass
+                except TemplateDoesNotExist as e:
+                    logger.error(f'TemplateDoesNotExist: {e}')
 
             if not http_response:
-                # use the html provided by pysaml2 if no template was specified or it didn't exist
+                # use the html provided by pysaml2 if no template was specified or it doesn't exist
                 try:
                     session_id, result = client.prepare_for_authenticate(
                         entityid=selected_idp, relay_state=next_path,
@@ -286,14 +298,19 @@ class LoginView(SPConfigMixin, View):
                 else:
                     http_response = HttpResponse(result['data'])
         else:
-            raise UnsupportedBinding('Unsupported binding: %s', binding)
+            raise UnsupportedBinding(f'Unsupported binding: {binding}')
 
         # success, so save the session ID and return our response
         oq_cache = OutstandingQueriesCache(request.saml_session)
         oq_cache.set(session_id, next_path)
         logger.debug(
-            'Saving the session_id "%s" in the OutstandingQueries cache', oq_cache.__dict__)
-        return http_response
+            f'Saving the session_id "{oq_cache.__dict__}" '
+            'in the OutstandingQueries cache',
+        )
+
+        # idp hinting support, add idphint url parameter if present in this request
+        response = add_idp_hinting(request, http_response) or http_response
+        return response
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -344,7 +361,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         _exception = None
         try:
             response = client.parse_authn_request_response(request.POST['SAMLResponse'],
-                                                           BINDING_HTTP_POST,
+                                                           saml2.BINDING_HTTP_POST,
                                                            outstanding_queries)
         except (StatusError, ToEarly) as e:
             _exception = e
@@ -525,12 +542,12 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
         for entityid, logout_info in result.items():
             if isinstance(logout_info, tuple):
                 binding, http_info = logout_info
-                if binding == BINDING_HTTP_POST:
+                if binding == saml2.BINDING_HTTP_POST:
                     logger.debug(
                         'Returning form to the IdP to continue the logout process')
                     body = ''.join(http_info['data'])
                     return HttpResponse(body)
-                elif binding == BINDING_HTTP_REDIRECT:
+                elif binding == saml2.BINDING_HTTP_REDIRECT:
                     logger.debug(
                         'Redirecting to the IdP to continue the logout process')
                     return HttpResponseRedirect(get_location(http_info))
@@ -569,10 +586,10 @@ class LogoutView(SPConfigMixin, View):
     logout_error_template = 'djangosaml2/logout_error.html'
 
     def get(self, request, *args, **kwargs):
-        return self.do_logout_service(request, request.GET, BINDING_HTTP_REDIRECT, *args, **kwargs)
+        return self.do_logout_service(request, request.GET, saml2.BINDING_HTTP_REDIRECT, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        return self.do_logout_service(request, request.POST, BINDING_HTTP_POST, *args, **kwargs)
+        return self.do_logout_service(request, request.POST, saml2.BINDING_HTTP_POST, *args, **kwargs)
 
     def do_logout_service(self, request, data, binding):
         logger.debug('Logout service started')
