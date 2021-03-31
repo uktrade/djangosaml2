@@ -128,6 +128,15 @@ may be specified by the client - typically with the ?next= parameter.)
 In the absence of a ?next= parameter, the LOGIN_REDIRECT_URL setting will be used (assuming the destination hostname
 either matches the output of get_host() or is included in the SAML_ALLOWED_HOSTS setting)
 
+Preferred sso binding
+---------------------
+Use the following setting to choose your preferred binding for SP initiated sso requests::
+
+  SAML_DEFAULT_BINDING
+
+For example::
+
+  SAML_DEFAULT_BINDING = saml2.BINDING_HTTP_POST
 
 Preferred Logout binding
 ------------------------

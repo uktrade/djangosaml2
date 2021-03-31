@@ -287,7 +287,7 @@ class LoginView(SPConfigMixin, View):
                     logger.error(f'TemplateDoesNotExist: {e}')
 
             if not http_response:
-                # use the html provided by pysaml2 if no template was specified or it didn't exist
+                # use the html provided by pysaml2 if no template was specified or it doesn't exist
                 try:
                     session_id, result = client.prepare_for_authenticate(
                         entityid=selected_idp, relay_state=next_path,
