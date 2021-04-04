@@ -10,7 +10,18 @@ A Django application that builds a Fully Compliant SAML2 Service Provider on top
  Djangosaml2 protects your project with a SAML2 SSO Authentication.
 
 
-Please consult the [official Documentation of djangosaml2](https://djangosaml2.readthedocs.io/en/latest/) to get started.
+Features:
+
+- HTTP-REDIRECT SSO Binding
+- HTTP-POST SSO Binding
+- SLO POST and HTTP-REDIRECT Binding
+- Discovery Service
+- embedded Wayf page with customizable html template
+- IdP Hinting
+- Samesite cookie
+
+
+Please consult the [official Documentation of djangosaml2](https://djangosaml2.readthedocs.io) to get started.
 
 
 Contributing
@@ -32,7 +43,3 @@ fork and maintained by different authors at different times, such as:
 
 - [Lorenzo Gil Sanchez](https://github.com/lorenzogil)
 - [Jozef knaperek](https://github.com/knaperek)
-
-A special thank to Jozef for having maintained this project with passion and diligence until the birth of version v0.19.0 and not least for allowing me to take the reins of all this.
-A special thank to [Mathieu Hinderyckx](https://github.com/mhindery) for having give an important contribution to v1.0.
-I'd like to thank all the contributors, one by one, for the color and creativity with which they have enriched this project and will continue to do so.
