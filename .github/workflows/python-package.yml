@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.8]
-        django-version: ["2.2", "3.0", "3.1"]
+        django-version: ["2.2", "3.0"]
 
     steps:
     - uses: actions/checkout@v2
@@ -28,8 +28,8 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install xmlsec1
         python -m pip install --upgrade pip tox rstcheck setuptools codecov
-    - name: Readme check
-      if: ${{ matrix.python-version }} == 3.8 && ${{ matrix.django-version }} == "3.0"
-      run: rstcheck README.rst
+    #- name: Readme check
+      #if: ${{ matrix.python-version }} == 3.8 && ${{ matrix.django-version }} == "3.0"
+      #run: rstcheck README.rst
     - name: Tests
       run: tox -e py${{ matrix.python-version }}-django${{ matrix.django-version }}

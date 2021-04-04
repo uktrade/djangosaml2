@@ -26,7 +26,8 @@ setup(
     name='djangosaml2',
     version='1.1.0',
     description='pysaml2 integration for Django',
-    long_description=read('README.rst'),
+    long_description=read('README.md'),
+    long_description_content_type='text/markdown',
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
