@@ -13,20 +13,17 @@ will talk SAML2 with your Identity Provider allowing you to use this authenticat
 
 Features:
 
-- HTTP-REDIRECT SSO Binding
-- HTTP-POST SSO Binding
-- SLO POST and HTTP-REDIRECT Binding
-- Discovery Service
-- embedded Wayf page with customizable html template
-- IdP Hinting
-- Samesite cookie
+* HTTP-REDIRECT SSO Binding
+* HTTP-POST SSO Binding
+* SLO POST and HTTP-REDIRECT Binding
+* Discovery Service
+* embedded Wayf page with customizable html template
+* IdP Hinting
+* Samesite cookie
 
 
 The entire project code is open sourced and therefore licensed
 under the `Apache 2.0 <https://en.wikipedia.org/wiki/Apache_License>`_.
-
-
-For any other information please consult the `Official Documentation <https://djangosaml2.readthedocs.io/>`_ and feel free to contribute the project or open issues.
 
 
 .. toctree::
