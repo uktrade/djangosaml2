@@ -183,7 +183,7 @@ Of course, with the real URL of your preferred Discovery Service.
 
 Idp hinting
 ===========
-If the SP uses an AIM Proxy it is possible to suggest the authentication IDP by adopting the _idphint_ parameter. The name of the `idphint` parameter is default, but it can also be changed using this parameter::
+If the SP uses an AIM Proxy it is possible to suggest the authentication IDP by adopting the `idphint` parameter. The name of the `idphint` parameter is default, but it can also be changed using this parameter::
 
   SAML2_IDPHINT_PARAM = 'idphint'
 
@@ -530,5 +530,7 @@ encryption/decryption support please configure another set of ``key_file`` and
 
   Check your openssl documentation to generate a test certificate.
 
-..
+
+.. Example::
+
   openssl req -nodes -new -x509 -newkey rsa:2048 -days 3650 -keyout private.key -out public.cert

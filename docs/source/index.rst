@@ -41,10 +41,3 @@ under the `Apache 2.0 <https://en.wikipedia.org/wiki/Apache_License>`_.
    :caption: FAQ
 
    contents/faq.md
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
