@@ -16,12 +16,10 @@ Now you need to send the entity id and the metadata of this new SP to the
  IdP administrators so they can add it to their list of trusted services.
 
 You can get this information starting your Django development server and
- going to the http://localhost:8000/saml2/metadata url. If you have included
+ going to the **http://localhost:8000/saml2/metadata/** url. If you have included
  the djangosaml2 urls under a different url prefix you need to correct this
  url.
 
 There are many saml2 idps suitable for testing, such as [samltest.id](https://samltest.id/).
- If you are looking for a django idp, try one of these:
-
-- [uniAuth](https://github.com/UniversitaDellaCalabria/uniAuth)
-- [djangosaml2idp](https://github.com/OTA-Insight/djangosaml2idp/)
+ If you are looking for a django IdP, you can try [uniAuth](https://github.com/UniversitaDellaCalabria/uniAuth) or
+ [djangosaml2idp](https://github.com/OTA-Insight/djangosaml2idp/).

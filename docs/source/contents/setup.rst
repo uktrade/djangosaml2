@@ -220,8 +220,8 @@ setting::
   SAML_CONFIG_LOADER = 'python.path.to.your.callable'
 
 
-User attributes
----------------
+Users, attributes and account linking
+-------------------------------------
 
 In the SAML 2.0 authentication process the Identity Provider (IdP) will
 send a security assertion to the Service Provider (SP) upon a successful
@@ -516,6 +516,11 @@ metadata for remote entities. Usually the easiest type is the ``local`` where
 you just put the name of a local XML file with the contents of the remote
 entities metadata. This XML file should be in the SAML2 metadata format.
 
+.. Note::
+
+  Don't use ``remote`` option for fetching metadata in production.
+  Try to use ``mdq`` and introduce a MDQ server instead, it's more efficient.
+
 The ``key_file`` and ``cert_file`` options reference the two parts of a
 standard x509 certificate. You need it to sign your metadata. For assertion
 encryption/decryption support please configure another set of ``key_file`` and
@@ -523,8 +528,7 @@ encryption/decryption support please configure another set of ``key_file`` and
 
 .. Note::
 
-  Check your openssl documentation to generate a test certificate but don't
-  forget to order a real one when you go into production.
+  Check your openssl documentation to generate a test certificate.
 
 ..
-  openssl req -nodes -new -x509 -days 3650 -keyout private.key -out public.cert
+  openssl req -nodes -new -x509 -newkey rsa:2048 -days 3650 -keyout private.key -out public.cert
