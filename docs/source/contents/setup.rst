@@ -143,6 +143,7 @@ Use the following setting to choose your preferred binding for SP initiated sso 
 
 For example::
 
+  import saml2
   SAML_DEFAULT_BINDING = saml2.BINDING_HTTP_POST
 
 Preferred Logout binding
@@ -165,12 +166,6 @@ Use the following setting to ignore these errors and perform a local Django logo
 
   SAML_IGNORE_LOGOUT_ERRORS = True
 
-Signed Logout Request
-=====================
-
-Idp's like Okta require a signed logout response to validate and logout a user. Here's a sample config with all required SP/IDP settings::
-
-   "logout_requests_signed": True,
 
 Discovery Service
 =================
@@ -377,6 +372,7 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
   import saml2
   import saml2.saml
   BASEDIR = path.dirname(path.abspath(__file__))
+
   SAML_CONFIG = {
     # full path to the xmlsec1 binary programm
     'xmlsec_binary': '/usr/bin/xmlsec1',
@@ -422,7 +418,9 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
             'name_id_format_allow_create': False,
 
              # attributes that this project need to identify a user
-            'required_attributes': ['uid'],
+            'required_attributes': ['givenName',
+                                    'sn',
+                                    'mail'],
 
              # attributes that may be useful to have but not required
             'optional_attributes': ['eduPersonAffiliation'],
@@ -498,6 +496,7 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
 
 .. _`PySAML2 documentation`: http://pysaml2.readthedocs.io/en/latest/
 
+
 There are several external files and directories you have to create according
 to this configuration.
 
@@ -505,10 +504,23 @@ The xmlsec1 binary was mentioned in the installation section. Here, in the
 configuration part you just need to put the full path to xmlsec1 so PySAML2
 can call it as it needs.
 
+Signed Logout Request
+=====================
+
+Idp's like Okta require a signed logout response to validate and logout a user. Here's a sample config with all required SP/IDP settings::
+
+   "logout_requests_signed": True,
+
+Attribute Map
+=============
+
 The ``attribute_map_dir`` points to a directory with attribute mappings that
 are used to translate user attribute names from several standards. It's usually
 safe to just copy the default PySAML2 attribute maps that you can find in the
 ``tests/attributemaps`` directory of the source distribution.
+
+Metadata
+========
 
 The ``metadata`` option is a dictionary where you can define several types of
 metadata for remote entities. Usually the easiest type is the ``local`` where
@@ -520,6 +532,10 @@ entities metadata. This XML file should be in the SAML2 metadata format.
   Don't use ``remote`` option for fetching metadata in production.
   Try to use ``mdq`` and introduce a MDQ server instead, it's more efficient.
 
+
+Certificates
+============
+
 The ``key_file`` and ``cert_file`` options reference the two parts of a
 standard x509 certificate. You need it to sign your metadata. For assertion
 encryption/decryption support please configure another set of ``key_file`` and
@@ -528,7 +544,6 @@ encryption/decryption support please configure another set of ``key_file`` and
 .. Note::
 
   Check your openssl documentation to generate a certificate suitable for SAML2 operations.
-
 
 SAML2 certificate creation example::
 
