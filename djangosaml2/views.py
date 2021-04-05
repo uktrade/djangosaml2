@@ -246,6 +246,7 @@ class LoginView(SPConfigMixin, View):
         sso_kwargs['nsprefix'] = get_namespace_prefixes()
 
         logger.debug(f'Redirecting user to the IdP via {binding} binding.')
+        _msg = 'Unable to know which IdP to use'
         if binding == saml2.BINDING_HTTP_REDIRECT:
             try:
                 session_id, result = client.prepare_for_authenticate(
@@ -253,8 +254,8 @@ class LoginView(SPConfigMixin, View):
                     binding=binding, sign=sign_requests,
                     **sso_kwargs)
             except TypeError as e:
-                logger.error('Unable to know which IdP to use')
-                return HttpResponse(str(e))
+                logger.error(f'{_msg}: {e}')
+                return HttpResponse(_msg)
             else:
                 http_response = HttpResponseRedirect(get_location(result))
         elif binding == saml2.BINDING_HTTP_POST:
@@ -263,8 +264,8 @@ class LoginView(SPConfigMixin, View):
                 try:
                     location = client.sso_location(selected_idp, binding)
                 except TypeError as e:
-                    logger.error('Unable to know which IdP to use')
-                    return HttpResponse(str(e))
+                    logger.error(f'{_msg}: {e}')
+                    return HttpResponse(_msg)
                 session_id, request_xml = client.create_authn_request(
                     location,
                     binding=binding,
@@ -293,8 +294,9 @@ class LoginView(SPConfigMixin, View):
                         entityid=selected_idp, relay_state=next_path,
                         binding=binding)
                 except TypeError as e:
-                    logger.error('Unable to know which IdP to use')
-                    return HttpResponse(str(e))
+                    _msg = f"Can't prepare the authentication for {selected_idp}"
+                    logger.error(f'{_msg}: {e}')
+                    return HttpResponse(_msg)
                 else:
                     http_response = HttpResponse(result['data'])
         else:
