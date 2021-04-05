@@ -392,7 +392,7 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
         # we are just a lonely SP
         'sp' : {
             'name': 'Federated Django sample SP',
-            'name_id_format': saml2.saml.NAMEID_FORMAT_PERSISTENT,
+            'name_id_format': saml2.saml.NAMEID_FORMAT_TRANSIENT,
 
             # For Okta add signed logout requets. Enable this:
             # "logout_requests_signed": True,
@@ -428,7 +428,7 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
             'optional_attributes': ['eduPersonAffiliation'],
 
             # in this section the list of IdPs we talk to are defined
-            # This is not mandatory! All the IdP available in the metadata will be considered.
+            # This is not mandatory! All the IdP available in the metadata will be considered instead.
             'idp': {
                 # we do not need a WAYF service since there is
                 # only an IdP defined here. This IdP should be
@@ -451,11 +451,10 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
     # One metadatastore or many ...
     'metadata': {
         'local': [path.join(BASEDIR, 'remote_metadata.xml')],
-        'remote': [{"url": "https://idp.testunical.it/idp/shibboleth",
-                    "disable_ssl_certificate_validation": True},],
+        'remote': [{"url": "https://idp.testunical.it/idp/shibboleth"},],
         'mdq': [{"url": "https://ds.testunical.it",
                  "cert": "certficates/others/ds.testunical.it.cert",
-                 "disable_ssl_certificate_validation": True}]
+                }]
         },
 
     # set to 1 to output debugging information
@@ -528,9 +527,9 @@ encryption/decryption support please configure another set of ``key_file`` and
 
 .. Note::
 
-  Check your openssl documentation to generate a test certificate.
+  Check your openssl documentation to generate a certificate suitable for SAML2 operations.
 
 
-.. Example::
+SAML2 certificate creation example::
 
   openssl req -nodes -new -x509 -newkey rsa:2048 -days 3650 -keyout private.key -out public.cert
