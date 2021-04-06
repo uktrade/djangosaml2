@@ -23,7 +23,7 @@ will also install PySAML2 and its dependencies automatically::
 
 
 Configuration
-=============
+-------------
 
 There are three things you need to setup to make djangosaml2 work in your
 Django project:
