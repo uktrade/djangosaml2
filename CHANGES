@@ -1,6 +1,27 @@
 Changes
 =======
 
+v.1.1.2 (2021-04-11)
+--------------------
+
+- fix: idp hinting invalid import
+
+
+v.1.1.1 (2021-04-05)
+--------------------
+
+- Read the docs
+- Information exposure mitigation on SSO login view
+
+
+v.1.1.0 (2021-04-01)
+--------------------
+
+- feature: Idp Hinting
+- params: SAML_DEFAULT_BINDING for SSO
+- code cleanup in SSO
+
+
 v.1.0.5 (2021-03-05)
 --------------------
 - code linting, cleanup. Not enough but better than before
