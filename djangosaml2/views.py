@@ -42,6 +42,7 @@ from saml2.response import (RequestVersionTooLow,
                             StatusNoAuthnContext, StatusRequestDenied,
                             UnsolicitedResponse)
 from saml2.s_utils import UnsupportedBinding
+from saml2.saml import SCM_BEARER
 from saml2.samlp import AuthnRequest
 from saml2.sigver import MissingKey
 from saml2.validate import ResponseLifetimeExceed, ToEarly
@@ -55,6 +56,7 @@ from .overrides import Saml2Client
 from .utils import (add_idp_hinting, available_idps, get_custom_setting,
                     get_idp_sso_supported_bindings, get_location,
                     validate_referral_url)
+
 
 logger = logging.getLogger('djangosaml2')
 
@@ -422,9 +424,12 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
 
         # assertion_info
         assertion = response.assertion
-        subject_confirmation_data = [sc.subject_confirmation_data for sc in assertion.subject.subject_confirmation]
-        subject_nooa = [scd.not_on_or_after if scd else None for scd in subject_confirmation_data]
-        assertion_info = {'assertion_id': assertion.id, 'not_on_or_after': subject_nooa}
+        assertion_info = {}
+        for sc in assertion.subject.subject_confirmation:
+            if sc.method == SCM_BEARER:
+                assertion_not_on_or_after = sc.subject_confirmation_data.not_on_or_after
+                assertion_info = {'assertion_id': assertion.id, 'not_on_or_after': assertion_not_on_or_after}
+                break
 
         if callable(attribute_mapping):
             attribute_mapping = attribute_mapping()
