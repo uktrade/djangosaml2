@@ -214,6 +214,31 @@ setting::
 
   SAML_CONFIG_LOADER = 'python.path.to.your.callable'
 
+Bearer Assertion Replay Attack Prevention
+==================================
+In SAML standard doc, section 4.1.4.5 it states
+
+The service provider MUST ensure that bearer assertions are not replayed, by maintaining the set of used ID values for the length of time for which the assertion would be considered valid based on the NotOnOrAfter attribute in the <SubjectConfirmationData>
+
+djangosaml2 provides a hook 'is_authorized' for the SP to store assertion IDs and implement replay prevention with your choice of storage. 
+::
+
+    def is_authorized(self, attributes: dict, attribute_mapping: dict, idp_entityid: str, assertion: object, **kwargs) -> bool:
+        if not assertion:
+            return True
+
+        # Get your choice of storage
+        cache_storage = storage.get_cache()
+        assertion_id = assertion.get('assertion_id')
+
+        if cache.get(assertion_id):
+            logger.warn("Received SAMLResponse assertion has been already used.")
+            return False
+
+        expiration_time = assertion.get('not_on_or_after')
+        time_delta = isoparse(expiration_time) - datetime.now(timezone.utc)
+        cache_storage.set(assertion_id, 'True', ex=time_delta)
+        return True
 
 Users, attributes and account linking
 -------------------------------------
