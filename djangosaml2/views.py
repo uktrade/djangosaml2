@@ -419,8 +419,12 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
 
         # authenticate the remote user
         session_info = response.session_info()
+
+        # assertion_info
         assertion = response.assertion
-        assertion_info = {'assertion_id': assertion.id, 'not_on_or_after': assertion.conditions.not_on_or_after if assertion.conditions else None}
+        subject_confirmation_data = [sc.subject_confirmation_data for sc in assertion.subject.subject_confirmation]
+        subject_nooa = [scd.not_on_or_after if scd else None for scd in subject_confirmation_data]
+        assertion_info = {'assertion_id': assertion.id, 'not_on_or_after': subject_nooa}
 
         if callable(attribute_mapping):
             attribute_mapping = attribute_mapping()
