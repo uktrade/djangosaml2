@@ -419,6 +419,8 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
 
         # authenticate the remote user
         session_info = response.session_info()
+        assertion = response.assertion
+        assertion_info = {'assertion_id': assertion.id, 'not_on_or_after': assertion.conditions.not_on_or_after if assertion.conditions else None}
 
         if callable(attribute_mapping):
             attribute_mapping = attribute_mapping()
@@ -431,7 +433,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
                                  session_info=session_info,
                                  attribute_mapping=attribute_mapping,
                                  create_unknown_user=create_unknown_user,
-                                 assertion=response.assertion)
+                                 assertion_info=assertion_info)
         if user is None:
             logger.warning(
                 "Could not authenticate user received in SAML Assertion. Session info: %s", session_info)
