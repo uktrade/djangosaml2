@@ -106,7 +106,7 @@ class Saml2Backend(ModelBackend):
                          'value is missing. Probably the user '
                          'session is expired.')
 
-    def authenticate(self, request, session_info=None, attribute_mapping=None, create_unknown_user=True, **kwargs):
+    def authenticate(self, request, session_info=None, attribute_mapping=None, create_unknown_user=True, assertion_info=None, **kwargs):
         if session_info is None or attribute_mapping is None:
             logger.info('Session info or attribute mapping are None')
             return None
@@ -121,7 +121,7 @@ class Saml2Backend(ModelBackend):
 
         logger.debug(f'attributes: {attributes}')
 
-        if not self.is_authorized(attributes, attribute_mapping, idp_entityid):
+        if not self.is_authorized(attributes, attribute_mapping, idp_entityid, assertion_info):
             logger.error('Request not authorized')
             return None
 
@@ -194,7 +194,7 @@ class Saml2Backend(ModelBackend):
         """ Hook to clean or filter attributes from the SAML response. No-op by default. """
         return attributes
 
-    def is_authorized(self, attributes: dict, attribute_mapping: dict, idp_entityid: str, **kwargs) -> bool:
+    def is_authorized(self, attributes: dict, attribute_mapping: dict, idp_entityid: str, assertion_info: dict, **kwargs) -> bool:
         """ Hook to allow custom authorization policies based on SAML attributes. True by default. """
         return True
 

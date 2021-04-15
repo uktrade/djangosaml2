@@ -42,6 +42,7 @@ from saml2.response import (RequestVersionTooLow,
                             StatusNoAuthnContext, StatusRequestDenied,
                             UnsolicitedResponse)
 from saml2.s_utils import UnsupportedBinding
+from saml2.saml import SCM_BEARER
 from saml2.samlp import AuthnRequest
 from saml2.sigver import MissingKey
 from saml2.validate import ResponseLifetimeExceed, ToEarly
@@ -55,6 +56,7 @@ from .overrides import Saml2Client
 from .utils import (add_idp_hinting, available_idps, get_custom_setting,
                     get_idp_sso_supported_bindings, get_location,
                     validate_referral_url)
+
 
 logger = logging.getLogger('djangosaml2')
 
@@ -420,6 +422,15 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         # authenticate the remote user
         session_info = response.session_info()
 
+        # assertion_info
+        assertion = response.assertion
+        assertion_info = {}
+        for sc in assertion.subject.subject_confirmation:
+            if sc.method == SCM_BEARER:
+                assertion_not_on_or_after = sc.subject_confirmation_data.not_on_or_after
+                assertion_info = {'assertion_id': assertion.id, 'not_on_or_after': assertion_not_on_or_after}
+                break
+
         if callable(attribute_mapping):
             attribute_mapping = attribute_mapping()
         if callable(create_unknown_user):
@@ -430,7 +441,8 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         user = auth.authenticate(request=request,
                                  session_info=session_info,
                                  attribute_mapping=attribute_mapping,
-                                 create_unknown_user=create_unknown_user)
+                                 create_unknown_user=create_unknown_user,
+                                 assertion_info=assertion_info)
         if user is None:
             logger.warning(
                 "Could not authenticate user received in SAML Assertion. Session info: %s", session_info)
