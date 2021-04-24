@@ -11,7 +11,7 @@ you will need to set the full path to it in the configuration stage.
 
 .. _xmlsec1: http://www.aleksey.com/xmlsec/
 
-Now you can install the djangosaml2 package using easy_install or pip. This
+Now you can install the djangosaml2 package using pip. This
 will also install PySAML2 and its dependencies automatically::
 
   apt install python3-pip xmlsec python3-dev libssl-dev libsasl2-dev
@@ -47,11 +47,6 @@ installed apps::
 
       'djangosaml2',  # new application
   )
-
-Actually this is not really required since djangosaml2 does not include
-any data model. The only reason we include it is to be able to run
-djangosaml2 test suite from our project, something you should always
-do to make sure it is compatible with your Django version and environment.
 
 .. Note::
 
@@ -114,7 +109,7 @@ federations where the logout protocol is not always available.
 
 If you want to allow several authentication mechanisms in your project
 you should set the LOGIN_URL option to another view and put a link in such
-view to the ``/saml2/login/`` view.
+view to djangosaml2 wb path, like ``/saml2/login/``.
 
 Handling Post-Login Redirects
 =============================
@@ -131,7 +126,7 @@ hostnames to be used for the post-login redirect.  In such cases, the setting::
 May be set to a list of allowed post-login redirect hostnames (note, the URL components beyond the hostname
 may be specified by the client - typically with the ?next= parameter.)
 
-In the absence of a ?next= parameter, the LOGIN_REDIRECT_URL setting will be used (assuming the destination hostname
+In the absence of a `?next=parameter`, the `LOGIN_REDIRECT_URL` setting will be used (assuming the destination hostname
 either matches the output of get_host() or is included in the SAML_ALLOWED_HOSTS setting)
 
 Preferred sso binding
@@ -220,7 +215,7 @@ In SAML standard doc, section 4.1.4.5 it states
 
 The service provider MUST ensure that bearer assertions are not replayed, by maintaining the set of used ID values for the length of time for which the assertion would be considered valid based on the NotOnOrAfter attribute in the <SubjectConfirmationData>
 
-djangosaml2 provides a hook 'is_authorized' for the SP to store assertion IDs and implement replay prevention with your choice of storage. 
+djangosaml2 provides a hook 'is_authorized' for the SP to store assertion IDs and implement replay prevention with your choice of storage.
 ::
 
     def is_authorized(self, attributes: dict, attribute_mapping: dict, idp_entityid: str, assertion: object, **kwargs) -> bool:
@@ -435,6 +430,10 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
                      saml2.BINDING_HTTP_POST),
                     ],
                 },
+
+            'signing_algorithm':  saml2.xmldsig.SIG_RSA_SHA256,
+            'digest_algorithm':  saml2.xmldsig.DIGEST_SHA256,
+
              # Mandates that the identity provider MUST authenticate the
              # presenter directly rather than rely on a previous security context.
             'force_authn': False,
@@ -449,6 +448,25 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
 
              # attributes that may be useful to have but not required
             'optional_attributes': ['eduPersonAffiliation'],
+
+            'want_response_signed': True,
+            'authn_requests_signed': True,
+            'logout_requests_signed': True,
+            # Indicates that Authentication Responses to this SP must
+            # be signed. If set to True, the SP will not consume
+            # any SAML Responses that are not signed.
+            'want_assertions_signed': True,
+
+            'only_use_keys_in_metadata': True,
+
+            # When set to true, the SP will consume unsolicited SAML
+            # Responses, i.e. SAML Responses for which it has not sent
+            # a respective SAML Authentication Request.
+            'allow_unsolicited': False,
+
+            # Permits to have attributes not configured in attribute-mappings
+            # otherwise...without OID will be rejected
+            'allow_unknown_attributes': True,
 
             # in this section the list of IdPs we talk to are defined
             # This is not mandatory! All the IdP available in the metadata will be considered instead.
