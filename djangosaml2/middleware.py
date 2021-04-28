@@ -9,7 +9,7 @@ from django.utils.cache import patch_vary_headers
 from django.utils.http import http_date
 
 
-SAMESITE_NONE = None if (VERSION[0] < 3) else 'None'
+SAMESITE_NONE = None if (VERSION[0] < 3.1) else 'None'
 
 
 class SamlSessionMiddleware(SessionMiddleware):
