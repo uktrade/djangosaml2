@@ -1,11 +1,15 @@
 import time
 
+from django import VERSION
 from django.conf import settings
 from django.contrib.sessions.backends.base import UpdateError
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.exceptions import SuspiciousOperation
 from django.utils.cache import patch_vary_headers
 from django.utils.http import http_date
+
+
+SAMESITE_NONE = None if (VERSION[0] < 3) else 'None'
 
 
 class SamlSessionMiddleware(SessionMiddleware):
@@ -34,7 +38,7 @@ class SamlSessionMiddleware(SessionMiddleware):
                 self.cookie_name,
                 path=settings.SESSION_COOKIE_PATH,
                 domain=settings.SESSION_COOKIE_DOMAIN,
-                samesite=None,
+                samesite=SAMESITE_NONE,
             )
             patch_vary_headers(response, ('Cookie',))
         else:
@@ -68,6 +72,6 @@ class SamlSessionMiddleware(SessionMiddleware):
                         path=settings.SESSION_COOKIE_PATH,
                         secure=settings.SESSION_COOKIE_SECURE or None,
                         httponly=settings.SESSION_COOKIE_HTTPONLY or None,
-                        samesite=None
+                        samesite=SAMESITE_NONE
                     )
         return response
