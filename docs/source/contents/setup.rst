@@ -70,6 +70,11 @@ You can even configure the SAML cookie name as follows::
 
   SAML_SESSION_COOKIE_NAME = 'saml_session'
 
+Remember that in your browser "SameSite=None" attribute MUST also
+have the "Secure" attribute, which is required in order to use "SameSite=None".
+
+  SESSION_COOKIE_SECURE = True
+
 .. Note::
 
   djangosaml2 will attempt to set the ``SameSite`` attribute of the SAML session cookie to ``None`` so that it can be
