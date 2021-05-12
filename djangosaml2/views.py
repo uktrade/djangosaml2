@@ -43,7 +43,7 @@ from saml2.response import (RequestVersionTooLow,
                             UnsolicitedResponse)
 from saml2.s_utils import UnsupportedBinding
 from saml2.saml import SCM_BEARER
-from saml2.samlp import AuthnRequest
+from saml2.samlp import AuthnRequest, IDPEntry, IDPList, Scoping
 from saml2.sigver import MissingKey
 from saml2.validate import ResponseLifetimeExceed, ToEarly
 from saml2.xmldsig import (  # support for SHA1 is required by spec
@@ -192,6 +192,13 @@ class LoginView(SPConfigMixin, View):
         if selected_idp is None:
             selected_idp = list(configured_idps.keys())[0]
 
+        # perform IdP Scoping if scoping param is present
+        idp_scoping = Scoping()
+        idp_scoping_param = request.GET.get('scoping', None)
+        if idp_scoping_param:
+            idp_scoping.idp_list = IDPList()
+            idp_scoping.idp_list.idp_entry.append(IDPEntry(provider_id = idp_scoping_param))
+
         # choose a binding to try first
         binding = getattr(settings, 'SAML_DEFAULT_BINDING', saml2.BINDING_HTTP_POST)
         logger.debug(f'Trying binding {binding} for IDP {selected_idp}')
@@ -253,7 +260,7 @@ class LoginView(SPConfigMixin, View):
             try:
                 session_id, result = client.prepare_for_authenticate(
                     entityid=selected_idp, relay_state=next_path,
-                    binding=binding, sign=sign_requests,
+                    binding=binding, sign=sign_requests, scoping=idp_scoping,
                     **sso_kwargs)
             except TypeError as e:
                 logger.error(f'{_msg}: {e}')
@@ -294,7 +301,7 @@ class LoginView(SPConfigMixin, View):
                 try:
                     session_id, result = client.prepare_for_authenticate(
                         entityid=selected_idp, relay_state=next_path,
-                        binding=binding)
+                        binding=binding, scoping=idp_scoping)
                 except TypeError as e:
                     _msg = f"Can't prepare the authentication for {selected_idp}"
                     logger.error(f'{_msg}: {e}')
