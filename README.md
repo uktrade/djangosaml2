@@ -21,6 +21,7 @@ Features:
 - Discovery Service
 - embedded Wayf page with customizable html template
 - IdP Hinting
+- IdP Scoping
 - Samesite cookie
 
 
