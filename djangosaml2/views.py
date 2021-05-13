@@ -43,7 +43,7 @@ from saml2.response import (RequestVersionTooLow,
                             UnsolicitedResponse)
 from saml2.s_utils import UnsupportedBinding
 from saml2.saml import SCM_BEARER
-from saml2.samlp import AuthnRequest
+from saml2.samlp import AuthnRequest, IDPEntry, IDPList, Scoping
 from saml2.sigver import MissingKey
 from saml2.validate import ResponseLifetimeExceed, ToEarly
 
@@ -192,6 +192,16 @@ class LoginView(SPConfigMixin, View):
         if selected_idp is None:
             selected_idp = list(configured_idps.keys())[0]
 
+        # perform IdP Scoping if scoping param is present
+        idp_scoping_param = request.GET.get('scoping', None)
+        if idp_scoping_param:
+            idp_scoping = Scoping()
+            idp_scoping.idp_list = IDPList()
+            idp_scoping.idp_list.idp_entry.append(
+                IDPEntry(provider_id = idp_scoping_param)
+            )
+            sso_kwargs['scoping'] = idp_scoping
+
         # choose a binding to try first
         binding = getattr(settings, 'SAML_DEFAULT_BINDING',
                           saml2.BINDING_HTTP_POST)
@@ -231,12 +241,11 @@ class LoginView(SPConfigMixin, View):
         sign_requests = getattr(conf, '_sp_authn_requests_signed', False)
 
         if sign_requests:
-            sso_kwargs["sigalg"] = settings.SAML_CONFIG['service']['sp']\
-                                           .get('signing_algorithm',
-                                                saml2.xmldsig.SIG_RSA_SHA256)
-            sso_kwargs["digest_alg"] = settings.SAML_CONFIG['service']['sp']\
-                .get('digest_algorithm',
-                     saml2.xmldsig.DIGEST_SHA256)
+            csc = settings.SAML_CONFIG['service']['sp']
+            sso_kwargs["sigalg"] = csc.get('signing_algorithm',
+                                           saml2.xmldsig.SIG_RSA_SHA256)
+            sso_kwargs["digest_alg"] = csc.get('digest_algorithm',
+                                               saml2.xmldsig.DIGEST_SHA256)
 
         # pysaml needs a string otherwise: "cannot serialize True (type bool)"
         if getattr(conf, '_sp_force_authn', False):
@@ -609,10 +618,14 @@ class LogoutView(SPConfigMixin, View):
     logout_error_template = 'djangosaml2/logout_error.html'
 
     def get(self, request, *args, **kwargs):
-        return self.do_logout_service(request, request.GET, saml2.BINDING_HTTP_REDIRECT, *args, **kwargs)
+        return self.do_logout_service(
+            request, request.GET, saml2.BINDING_HTTP_REDIRECT, *args, **kwargs
+        )
 
     def post(self, request, *args, **kwargs):
-        return self.do_logout_service(request, request.POST, saml2.BINDING_HTTP_POST, *args, **kwargs)
+        return self.do_logout_service(
+            request, request.POST, saml2.BINDING_HTTP_POST, *args, **kwargs
+        )
 
     def do_logout_service(self, request, data, binding):
         logger.debug('Logout service started')

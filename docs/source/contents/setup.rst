@@ -70,6 +70,11 @@ You can even configure the SAML cookie name as follows::
 
   SAML_SESSION_COOKIE_NAME = 'saml_session'
 
+Remember that in your browser "SameSite=None" attribute MUST also
+have the "Secure" attribute, which is required in order to use "SameSite=None".
+
+  SESSION_COOKIE_SECURE = True
+
 .. Note::
 
   djangosaml2 will attempt to set the ``SameSite`` attribute of the SAML session cookie to ``None`` so that it can be
@@ -200,6 +205,20 @@ For example::
   requests.get(f'http://djangosaml2.sp.fqdn.org/saml2/login/?{param}')
 
 see AARC Blueprint specs `here <https://zenodo.org/record/4596667/files/AARC-G061-A_specification_for_IdP_hinting.pdf>`_.
+
+
+IdP scoping
+===========
+The SP can suggest an IdP to a proxy by using the Scoping and IDPList elements in a SAML AuthnRequest. This is done using the `scoping` parameter to the login URL.
+
+``https://sp.example.org/saml2/login/?scoping=https://idp.example.org``
+
+This parameter can be combined with the IdP parameter if multiple IdPs are present in the metadata, otherwise the first is used.
+
+``https://sp.example.org/saml2/login/?scoping=https://idp.example.org&idp=https://proxy.example.com/metadata``
+
+Currently there is support for a single IDPEntry in the IDPList.
+
 
 Custom and dynamic configuration loading
 ========================================
