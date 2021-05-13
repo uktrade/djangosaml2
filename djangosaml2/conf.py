@@ -51,9 +51,12 @@ def config_settings_loader(request: Optional[HttpRequest] = None) -> SPConfig:
     return conf
 
 
-def get_config(config_loader_path: Optional[Union[Callable, str]] = None, request: Optional[HttpRequest] = None) -> SPConfig:
-    """ Load a config_loader function if necessary, and call that function with the request as argument.
-        If the config_loader_path is a callable instead of a string, no importing is necessary and it will be used directly.
+def get_config(config_loader_path: Optional[Union[Callable, str]] = None,
+               request: Optional[HttpRequest] = None) -> SPConfig:
+    """ Load a config_loader function if necessary, and call that
+        function with the request as argument.
+        If the config_loader_path is a callable instead of a string,
+        no importing is necessary and it will be used directly.
         Return the resulting SPConfig.
     """
     config_loader_path = config_loader_path or get_custom_setting(

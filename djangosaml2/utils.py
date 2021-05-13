@@ -104,23 +104,25 @@ def saml2_from_httpredirect_request(url):
 
 
 def get_session_id_from_saml2(saml2_xml):
-    saml2_xml = saml2_xml.encode() if isinstance(saml2_xml, str) else saml2_xml
-    return re.findall(b'ID="([a-z0-9\-]*)"', saml2_xml, re.I)[0].decode()
+    saml2_xml = saml2_xml.decode() if isinstance(saml2_xml, bytes) else saml2_xml
+    return re.findall(r'ID="([a-z0-9\-]*)"', saml2_xml, re.I)[0]
 
 
 def get_subject_id_from_saml2(saml2_xml):
     saml2_xml = saml2_xml if isinstance(saml2_xml, str) else saml2_xml.decode()
     re.findall('">([a-z0-9]+)</saml:NameID>', saml2_xml)[0]
 
-def add_param_in_url(url:str, param_key:str, param_value:str):
+
+def add_param_in_url(url: str, param_key: str, param_value: str):
     params = list(url.split('?'))
     params.append(f'{param_key}={param_value}')
-    new_url = params[0] + '?' +''.join(params[1:])
+    new_url = params[0] + '?' + ''.join(params[1:])
     return new_url
+
 
 def add_idp_hinting(request, http_response) -> bool:
     idphin_param = getattr(settings, 'SAML2_IDPHINT_PARAM', 'idphint')
-    params = urllib.parse.urlencode(request.GET)
+    urllib.parse.urlencode(request.GET)
 
     if idphin_param not in request.GET.keys():
         return False
