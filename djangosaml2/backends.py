@@ -140,7 +140,7 @@ class Saml2Backend(ModelBackend):
         if user is not None:
             user = self._update_user(
                 user, attributes, attribute_mapping, force_save=created)
-        
+
         if self.user_can_authenticate(user):
             return user
 

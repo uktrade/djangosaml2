@@ -46,8 +46,6 @@ from saml2.saml import SCM_BEARER
 from saml2.samlp import AuthnRequest
 from saml2.sigver import MissingKey
 from saml2.validate import ResponseLifetimeExceed, ToEarly
-from saml2.xmldsig import (  # support for SHA1 is required by spec
-    SIG_RSA_SHA1, SIG_RSA_SHA256)
 
 from .cache import IdentityCache, OutstandingQueriesCache, StateCache
 from .conf import get_config
@@ -160,6 +158,8 @@ class LoginView(SPConfigMixin, View):
         configured_idps = available_idps(conf)
         selected_idp = request.GET.get('idp', None)
 
+        sso_kwargs = {}
+
         # Do we have a Discovery Service?
         if not selected_idp:
             discovery_service = getattr(settings, 'SAML2_DISCO_URL', None)
@@ -193,7 +193,8 @@ class LoginView(SPConfigMixin, View):
             selected_idp = list(configured_idps.keys())[0]
 
         # choose a binding to try first
-        binding = getattr(settings, 'SAML_DEFAULT_BINDING', saml2.BINDING_HTTP_POST)
+        binding = getattr(settings, 'SAML_DEFAULT_BINDING',
+                          saml2.BINDING_HTTP_POST)
         logger.debug(f'Trying binding {binding} for IDP {selected_idp}')
 
         # ensure our selected binding is supported by the IDP
@@ -225,18 +226,17 @@ class LoginView(SPConfigMixin, View):
                 )
 
         client = Saml2Client(conf)
-        http_response = None
 
         # SSO options
         sign_requests = getattr(conf, '_sp_authn_requests_signed', False)
-        sso_kwargs = {}
+
         if sign_requests:
             sso_kwargs["sigalg"] = settings.SAML_CONFIG['service']['sp']\
                                            .get('signing_algorithm',
                                                 saml2.xmldsig.SIG_RSA_SHA256)
             sso_kwargs["digest_alg"] = settings.SAML_CONFIG['service']['sp']\
-                                           .get('digest_algorithm',
-                                                saml2.xmldsig.DIGEST_SHA256)
+                .get('digest_algorithm',
+                     saml2.xmldsig.DIGEST_SHA256)
 
         # pysaml needs a string otherwise: "cannot serialize True (type bool)"
         if getattr(conf, '_sp_force_authn', False):
@@ -249,6 +249,8 @@ class LoginView(SPConfigMixin, View):
 
         logger.debug(f'Redirecting user to the IdP via {binding} binding.')
         _msg = 'Unable to know which IdP to use'
+        http_response = None
+
         if binding == saml2.BINDING_HTTP_REDIRECT:
             try:
                 session_id, result = client.prepare_for_authenticate(
@@ -260,6 +262,7 @@ class LoginView(SPConfigMixin, View):
                 return HttpResponse(_msg)
             else:
                 http_response = HttpResponseRedirect(get_location(result))
+
         elif binding == saml2.BINDING_HTTP_POST:
             if self.post_binding_form_template:
                 # get request XML to build our own html based on the template
@@ -268,10 +271,12 @@ class LoginView(SPConfigMixin, View):
                 except TypeError as e:
                     logger.error(f'{_msg}: {e}')
                     return HttpResponse(_msg)
+
                 session_id, request_xml = client.create_authn_request(
                     location,
                     binding=binding,
-                    **sso_kwargs)
+                    **sso_kwargs
+                )
                 try:
                     if isinstance(request_xml, AuthnRequest):
                         # request_xml will be an instance of AuthnRequest if the message is not signed
@@ -287,14 +292,16 @@ class LoginView(SPConfigMixin, View):
                         },
                     })
                 except TemplateDoesNotExist as e:
-                    logger.error(f'TemplateDoesNotExist: {e}')
+                    logger.error(
+                        f'TemplateDoesNotExist: [{self.post_binding_form_template}] - {e}'
+                    )
 
             if not http_response:
                 # use the html provided by pysaml2 if no template was specified or it doesn't exist
                 try:
                     session_id, result = client.prepare_for_authenticate(
                         entityid=selected_idp, relay_state=next_path,
-                        binding=binding)
+                        binding=binding, **sso_kwargs)
                 except TypeError as e:
                     _msg = f"Can't prepare the authentication for {selected_idp}"
                     logger.error(f'{_msg}: {e}')
@@ -373,7 +380,8 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         except ResponseLifetimeExceed as e:
             _exception = e
             logger.info(
-                ("SAML Assertion is no longer valid. Possibly caused by network delay or replay attack."), exc_info=True)
+                ("SAML Assertion is no longer valid. Possibly caused "
+                 "by network delay or replay attack."), exc_info=True)
         except SignatureError as e:
             _exception = e
             logger.info("Invalid or malformed SAML Assertion.", exc_info=True)
@@ -428,7 +436,8 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         for sc in assertion.subject.subject_confirmation:
             if sc.method == SCM_BEARER:
                 assertion_not_on_or_after = sc.subject_confirmation_data.not_on_or_after
-                assertion_info = {'assertion_id': assertion.id, 'not_on_or_after': assertion_not_on_or_after}
+                assertion_info = {'assertion_id': assertion.id,
+                                  'not_on_or_after': assertion_not_on_or_after}
                 break
 
         if callable(attribute_mapping):
