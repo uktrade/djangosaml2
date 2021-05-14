@@ -617,3 +617,14 @@ encryption/decryption support please configure another set of ``key_file`` and
 SAML2 certificate creation example::
 
   openssl req -nodes -new -x509 -newkey rsa:2048 -days 3650 -keyout private.key -out public.cert
+
+
+PySAML2 certificates are files, in the form of strings that contains a filesystem path.
+What about configuring the certificates in a different way, in case we are using a container based deploy?
+
+- You could supply the cert & key as environment variables (base64 encoded) then create the files
+when the container starts, either in an entry point shell script or in your settings.py file.
+
+- Using `Python Tempfile <https://docs.python.org/3/library/tempfile.html>`_
+In the settings create two temp files, then write the content configured in environment variables in them, then use tmpfile.name as
+key/cert values in pysaml2 configuration.
