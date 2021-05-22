@@ -125,6 +125,13 @@ class LoginView(SPConfigMixin, View):
         next_path = validate_referral_url(request, next_path)
         return next_path
 
+    def unknown_idp(self, request, idp):
+        msg = (f'Error: IdP EntityID {idp} was not found in metadata')
+        logger.error(msg)
+        return HttpResponse(
+            msg.format('Please contact technical support.'), status=403
+        )
+
     def get(self, request, *args, **kwargs):
         logger.debug('Login process started')
         next_path = self.get_next_path(request)
@@ -149,10 +156,10 @@ class LoginView(SPConfigMixin, View):
 
         try:
             conf = self.get_sp_config(request)
-        except SourceNotFound as excp:
-            msg = ('Error, IdP EntityID was not found in metadata: {}')
-            logger.exception(msg.format(excp))
-            return HttpResponse(msg.format('Please contact technical support.'), status=500)
+        except SourceNotFound as excp:  # pragma: no cover
+            # this is deprecated and it's here only for the doubts that something
+            # would happen the day after I'll remove it! :)
+            return self.unknown_idp(request, idp='unknown')
 
         # is a embedded wayf or DiscoveryService needed?
         configured_idps = available_idps(conf)
@@ -186,9 +193,9 @@ class LoginView(SPConfigMixin, View):
                 })
 
         # is the first one, otherwise next logger message will print None
-        if not configured_idps:
+        if not configured_idps: # pragma: no cover
             raise IdPConfigurationMissing(
-                ('IdP configuration is missing or its metadata is expired.'))
+                ('IdP is missing or its metadata is expired.'))
         if selected_idp is None:
             selected_idp = list(configured_idps.keys())[0]
 
@@ -202,15 +209,17 @@ class LoginView(SPConfigMixin, View):
             )
             sso_kwargs['scoping'] = idp_scoping
 
-
         # choose a binding to try first
         binding = getattr(settings, 'SAML_DEFAULT_BINDING',
                           saml2.BINDING_HTTP_POST)
         logger.debug(f'Trying binding {binding} for IDP {selected_idp}')
 
         # ensure our selected binding is supported by the IDP
-        supported_bindings = get_idp_sso_supported_bindings(
-            selected_idp, config=conf)
+        try:
+            supported_bindings = get_idp_sso_supported_bindings(
+                selected_idp, config=conf)
+        except saml2.s_utils.UnknownSystemEntity:
+            return self.unknown_idp(request, selected_idp)
 
         if binding not in supported_bindings:
             logger.debug(
@@ -223,17 +232,17 @@ class LoginView(SPConfigMixin, View):
                     f'trying {saml2.BINDING_HTTP_REDIRECT}',
                 )
                 binding = saml2.BINDING_HTTP_REDIRECT
-            else:
+            else: # pragma: no cover
                 logger.warning(
                     f'IDP {selected_idp} does not support {binding} '
                     f'trying {saml2.BINDING_HTTP_POST}',
                 )
                 binding = saml2.BINDING_HTTP_POST
             # if switched binding still not supported, give up
-            if binding not in supported_bindings:
+            if binding not in supported_bindings: # pragma: no cover
                 raise UnsupportedBinding(
                     f'IDP {selected_idp} does not support '
-                    f'{saml2.BINDING_HTTP_POST} and {saml2.BINDING_HTTP_REDIRECT}'
+                    f'{saml2.BINDING_HTTP_POST} or {saml2.BINDING_HTTP_REDIRECT}'
                 )
 
         client = Saml2Client(conf)

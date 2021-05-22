@@ -40,7 +40,9 @@ from djangosaml2.utils import (get_idp_sso_supported_bindings,
                                saml2_from_httpredirect_request)
 from djangosaml2.views import (EchoAttributesView, finish_logout)
 from saml2.config import SPConfig
-from saml2.s_utils import decode_base64_and_inflate, deflate_and_base64_encode
+from saml2.s_utils import (decode_base64_and_inflate,
+                           deflate_and_base64_encode,
+                           UnknownSystemEntity)
 
 from .auth_response import auth_response
 from .utils import SAMLPostFormParser
@@ -114,8 +116,9 @@ class SAML2Tests(TestCase):
             idp_hosts=['idp.example.com'],
             metadata_file='remote_metadata_one_idp.xml',
         )
-        self.assertEqual(get_idp_sso_supported_bindings(
-            idp_entity_id='random'), [])
+
+        with self.assertRaises(UnknownSystemEntity):
+            get_idp_sso_supported_bindings(idp_entity_id='random')
 
     def test_get_idp_sso_supported_bindings_no_idps(self):
         settings.SAML_CONFIG = conf.create_conf(
@@ -188,6 +191,16 @@ class SAML2Tests(TestCase):
         params = parse_qs(url.query)
 
         self.assertEqual(params['RelayState'], [settings.LOGIN_REDIRECT_URL, ])
+
+    def test_unknown_idp(self):
+        # monkey patch SAML configuration
+        settings.SAML_CONFIG = conf.create_conf(
+            sp_host='sp.example.com',
+            metadata_file='remote_metadata_three_idps.xml',
+        )
+
+        response = self.client.get(reverse('saml2_login')+'?idp=https://unknown.org')
+        self.assertEqual(response.status_code, 403)
 
     def test_login_one_idp(self):
         # monkey patch SAML configuration

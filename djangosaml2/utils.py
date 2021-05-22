@@ -68,8 +68,9 @@ def get_idp_sso_supported_bindings(idp_entity_id: Optional[str] = None, config: 
     try:
         return list(meta.service(idp_entity_id, 'idpsso_descriptor', 'single_sign_on_service').keys())
     except UnknownSystemEntity:
-        return []
-
+        raise UnknownSystemEntity
+    except Exception as e:
+        logger.error(f"get_idp_sso_supported_bindings failed with: {e}")
 
 def get_location(http_info):
     """Extract the redirect URL from a pysaml2 http_info object"""
