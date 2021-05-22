@@ -616,6 +616,17 @@ class SAML2Tests(TestCase):
         _args, kwargs = prepare_for_auth_mock.call_args
         self.assertIn('sigalg', kwargs)
 
+    @override_settings(SAML2_DISCO_URL="https://that-ds.org/ds")
+    def test_discovery_service(self):
+        settings.SAML_CONFIG = conf.create_conf(
+            sp_host='sp.example.com',
+            idp_hosts=['idp.example.com'],
+            metadata_file='remote_metadata_three_idps.xml',
+        )
+
+        response = self.client.get(reverse('saml2_login'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("https://that-ds.org/ds", response.url)
 
 def test_config_loader(request):
     config = SPConfig()
@@ -746,6 +757,5 @@ class MiddlewareTests(SessionEnabledTestCase):
             cookie = response.cookies[saml_session_name]
 
             self.assertIsNotNone(cookie['expires'])
-
             self.assertNotEqual(cookie['expires'], '')
             self.assertNotEqual(cookie['max-age'], '')
