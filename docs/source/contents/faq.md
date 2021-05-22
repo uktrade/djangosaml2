@@ -26,3 +26,11 @@ case of a problem, much harder to debug.
 
 Following that pattern then I should import the application with
 import saml but unfortunately that module name is already used in pysaml2.
+
+**saml2.response.UnsolicitedResponse: Unsolicited response**
+
+If you are experiencing issues with unsolicited requests this is due to the fact that
+ cookies not being sent when using the HTTP-POST binding. You have to configure samesite
+ djangosaml2 middleware (see setup documentation) and also consider upgrading
+ to Django 3.1 or higher.
+If you can't do that, configure "allow_unsolicited" to True in pySAML2 configuration.
