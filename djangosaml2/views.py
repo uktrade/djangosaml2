@@ -240,14 +240,14 @@ class LoginView(SPConfigMixin, View):
 
         # SSO options
         sign_requests = getattr(conf, '_sp_authn_requests_signed', False)
-
         if sign_requests:
-            csc = settings.SAML_CONFIG['service']['sp']
-            sso_kwargs["sigalg"] = csc.get('signing_algorithm',
-                                           saml2.xmldsig.SIG_RSA_SHA256)
-            sso_kwargs["digest_alg"] = csc.get('digest_algorithm',
-                                               saml2.xmldsig.DIGEST_SHA256)
-
+            sso_kwargs["sigalg"] = getattr(conf, '_sp_signing_algorithm',
+                                           saml2.xmldsig.SIG_RSA_SHA256
+            )
+            sso_kwargs["digest_alg"] = getattr(conf,
+                                               '_sp_digest_algorithm',
+                                               saml2.xmldsig.DIGEST_SHA256
+            )
         # pysaml needs a string otherwise: "cannot serialize True (type bool)"
         if getattr(conf, '_sp_force_authn', False):
             sso_kwargs['force_authn'] = "true"
