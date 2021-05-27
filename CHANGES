@@ -1,11 +1,16 @@
 Changes
 =======
 
-v1.2.2 (unreleased)
+v1.2.2 (2021-05-27)
 -------------------
 
+- Fix #245: Don't update user_main_attribute @jaap3 (#283)
+- Fix #278: Allow ACS_DEFAULT_REDIRECT_URL to override LOGIN_REDIRECT_URL in more places @jaap3 (#285)
+- Add release notes for previous and upcomming releases @jaap3 (#284)
+- Add default_auto_field setting, strongly recommended in Django 3.2 @jaap3 (#282)
+- SPConfig loader instead of global django settings @peppelinux (#281)
+- Fix #277: Resolve LOGIN_REDIRECT_URL @jaap3 (#279)
 - Resolve LOGIN_REDIRECT_URL @jaap3 (#277)
-
 
 v1.2.1 (2021-05-23)
 -------------------
