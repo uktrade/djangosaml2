@@ -21,24 +21,23 @@ a link to do a global logout.
 Unit tests
 ==========
 
-You can also run the unit tests as follows::
+Djangosaml2 have a legacy way to do tests, using an example project in `tests` directory.
+This means that to run tests you have to clone the repository, then install djangosaml2, then run tests using the example project.
+
+example::
 
   pip install -r requirements-dev.txt
   # or
   pip install djangosaml2[test]
-  python3 tests/manage.py migrate
+
 
 then::
-
-  python tests/run_tests.py
-
-or::
-
-  cd tests/
+  cd tests
+  ./manage.py migrate
   ./manage.py test djangosaml2
 
 
-If you have `tox`_ installed you can simply call tox inside the root directory
+If you have `tox`_ installed you can simply call `tox` inside the root directory
 and it will run the tests in multiple versions of Python.
 
 .. _`tox`: http://pypi.python.org/pypi/tox

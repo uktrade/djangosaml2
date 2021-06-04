@@ -43,6 +43,8 @@ from saml2.response import (RequestVersionTooLow,
                             UnsolicitedResponse)
 from saml2.s_utils import UnsupportedBinding
 from saml2.saml import SCM_BEARER
+from saml2.saml import AuthnContextClassRef
+from saml2.samlp import RequestedAuthnContext
 from saml2.samlp import AuthnRequest, IDPEntry, IDPList, Scoping
 from saml2.sigver import MissingKey
 from saml2.validate import ResponseLifetimeExceed, ToEarly
@@ -133,6 +135,41 @@ class LoginView(SPConfigMixin, View):
             msg.format('Please contact technical support.'), status=403
         )
 
+    def load_sso_kwargs_scoping(self, sso_kwargs):
+        """ Performs IdP Scoping if scoping param is present. """
+        idp_scoping_param = self.request.GET.get('scoping', None)
+        if idp_scoping_param:
+            idp_scoping = Scoping()
+            idp_scoping.idp_list = IDPList()
+            idp_scoping.idp_list.idp_entry.append(
+                IDPEntry(provider_id = idp_scoping_param)
+            )
+            sso_kwargs['scoping'] = idp_scoping
+
+    def load_sso_kwargs_authn_context(self, sso_kwargs):
+        # this would work when https://github.com/IdentityPython/pysaml2/pull/807
+        ac = getattr(self.conf, '_sp_requested_authn_context', {})
+
+        # this works even without https://github.com/IdentityPython/pysaml2/pull/807
+        # hopefully to be removed soon !
+        if not ac:
+            scs = getattr(
+                settings, 'SAML_CONFIG', {}
+            ).get('service', {}).get('sp', {})
+            ac = scs.get('requested_authn_context', {})
+        # end transitional things to be removed soon !
+
+        if ac:
+            sso_kwargs["requested_authn_context"] = RequestedAuthnContext(
+                    authn_context_class_ref=[
+                        AuthnContextClassRef(ac['authn_context_class_ref']),
+                    ],
+                    comparison = ac.get('comparison', "minimum"),
+                )
+
+    def load_sso_kwargs(self, sso_kwargs):
+        """ Inherit me if you want to put your desidered things in sso_kwargs """
+
     def get(self, request, *args, **kwargs):
         logger.debug('Login process started')
         next_path = self.get_next_path(request)
@@ -166,6 +203,7 @@ class LoginView(SPConfigMixin, View):
         configured_idps = available_idps(conf)
         selected_idp = request.GET.get('idp', None)
 
+        self.conf = conf
         sso_kwargs = {}
 
         # Do we have a Discovery Service?
@@ -199,16 +237,6 @@ class LoginView(SPConfigMixin, View):
                 ('IdP is missing or its metadata is expired.'))
         if selected_idp is None:
             selected_idp = list(configured_idps.keys())[0]
-
-        # perform IdP Scoping if scoping param is present
-        idp_scoping_param = request.GET.get('scoping', None)
-        if idp_scoping_param:
-            idp_scoping = Scoping()
-            idp_scoping.idp_list = IDPList()
-            idp_scoping.idp_list.idp_entry.append(
-                IDPEntry(provider_id = idp_scoping_param)
-            )
-            sso_kwargs['scoping'] = idp_scoping
 
         # choose a binding to try first
         binding = getattr(settings, 'SAML_DEFAULT_BINDING',
@@ -266,6 +294,15 @@ class LoginView(SPConfigMixin, View):
 
         # custom nsprefixes
         sso_kwargs['nsprefix'] = get_namespace_prefixes()
+
+
+        # Enrich sso_kwargs ...
+        # idp scoping
+        self.load_sso_kwargs_scoping(sso_kwargs)
+        # authn context
+        self.load_sso_kwargs_authn_context(sso_kwargs)
+        # other customization to be inherited
+        self.load_sso_kwargs(sso_kwargs)
 
         logger.debug(f'Redirecting user to the IdP via {binding} binding.')
         _msg = 'Unable to know which IdP to use'

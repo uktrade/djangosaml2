@@ -48,14 +48,6 @@ installed apps::
       'djangosaml2',  # new application
   )
 
-.. Note::
-
-  When you finish the configuration you can run the djangosaml2 test suite as
-  you run any other Django application test suite. Just type ``python manage.py
-  test djangosaml2``.
-
-  Python users need to ``pip install djangosaml2[test]`` in order to run the
-  tests.
 
 SameSite cookie
 ===============
@@ -219,6 +211,17 @@ This parameter can be combined with the IdP parameter if multiple IdPs are prese
 ``https://sp.example.org/saml2/login/?scoping=https://idp.example.org&idp=https://proxy.example.com/metadata``
 
 Currently there is support for a single IDPEntry in the IDPList.
+
+
+Authn Context
+=============
+
+We can define the authentication context in settings.SAML_CONFIG['service']['sp'] as follows::
+
+    'requested_authn_context': {
+        'authn_context_class_ref': saml2.saml.AUTHN_PASSWORD_PROTECTED,
+        'comparison': "exact"
+    }
 
 
 Custom and dynamic configuration loading
