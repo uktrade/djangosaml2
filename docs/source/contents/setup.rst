@@ -213,6 +213,17 @@ This parameter can be combined with the IdP parameter if multiple IdPs are prese
 Currently there is support for a single IDPEntry in the IDPList.
 
 
+Authn Context
+=============
+
+We can define the authentication context in settings.SAML_CONFIG['service']['sp'] as follows::
+
+    'requested_authn_context': {
+        'authn_context_class_ref': saml2.saml.AUTHN_PASSWORD_PROTECTED,
+        'comparison': "exact"
+    }
+
+
 Custom and dynamic configuration loading
 ========================================
 
