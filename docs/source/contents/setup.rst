@@ -219,7 +219,7 @@ Authn Context
 We can define the authentication context in settings.SAML_CONFIG['service']['sp'] as follows::
 
     'requested_authn_context': {
-        'authn_context_class_ref': saml2.saml.AUTHN_PASSWORD_PROTECTED,
+        'authn_context_class_ref': [saml2.saml.AUTHN_PASSWORD_PROTECTED],
         'comparison': "exact"
     }
 
