@@ -162,9 +162,9 @@ class LoginView(SPConfigMixin, View):
         if ac:
             sso_kwargs["requested_authn_context"] = RequestedAuthnContext(
                     authn_context_class_ref=[
-                        AuthnContextClassRef(ac['authn_context_class_ref']),
+                        AuthnContextClassRef(ref) for ref in ac['authn_context_class_ref']
                     ],
-                    comparison = ac.get('comparison', "minimum"),
+                    comparison=ac.get('comparison', "minimum"),
                 )
 
     def load_sso_kwargs(self, sso_kwargs):
