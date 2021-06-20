@@ -349,7 +349,7 @@ class LoginView(SPConfigMixin, View):
                         },
                     })
                 except TemplateDoesNotExist as e:
-                    logger.error(
+                    logger.debug(
                         f'TemplateDoesNotExist: [{self.post_binding_form_template}] - {e}'
                     )
 
@@ -596,17 +596,24 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
             logger.warning(
                 'The session does not contain the subject id for user %s', request.user)
 
+        _error = None
         try:
             result = client.global_logout(subject_id)
         except LogoutError as exp:
             logger.exception(
                 'Error Handled - SLO not supported by IDP: {}'.format(exp))
-            auth.logout(request)
-            state.sync()
-            return self.handle_unsupported_slo_exception(request, exp)
+            _error = exp
+        except UnsupportedBinding as exp:
+            logger.exception(
+                'Error Handled - SLO - unsupported binding by IDP: {}'.format(exp))
+            _error = exp
 
         auth.logout(request)
         state.sync()
+
+        if _error:
+            return self.handle_unsupported_slo_exception(request, _error)
+
 
         if not result:
             logger.error(
