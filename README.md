@@ -3,6 +3,7 @@ djangosaml2
 
 ![CI build](https://github.com/peppelinux/djangosaml2/workflows/djangosaml2/badge.svg)
 ![pypi](https://img.shields.io/pypi/v/djangosaml2.svg)
+[![Downloads](https://pepy.tech/badge/djangosaml2/month)](https://pepy.tech/project/djangosaml2)
 ![Python version](https://img.shields.io/badge/license-Apache%202-blue.svg)
 ![Django versions](https://img.shields.io/pypi/djversions/djangosaml2)
 ![Documentation Status](https://readthedocs.org/projects/djangosaml2/badge/?version=latest)
