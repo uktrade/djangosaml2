@@ -380,19 +380,35 @@ Learn more about Django profile models at:
 https://docs.djangoproject.com/en/dev/topics/auth/customizing/#substituting-a-custom-user-model
 
 
+Custom user attributes processing
+---------------------------------
+
 Sometimes you need to use special logic to update the user object
 depending on the SAML2 attributes and the mapping described above
 is simply not enough. For these cases djangosaml2 provides hooks_
-that can be overriden with custom functionality. For example::
+that can be overriden with custom functionality.
 
-  from djangosaml2.backends import Saml2Backend
+First of all reference the modified Saml2Backend in settings.py file::
 
-  class MySaml2Backend(Saml2Backend):
-      def save_user(self, user, *args, **kwargs):
-          # Add custom logic here
-          return super().save_user(user, *args, **kwargs)
 
-.. _hooks: https://github.com/knaperek/djangosaml2/blob/master/djangosaml2/backends.py#L181
+    AUTHENTICATION_BACKENDS = [
+        'your_package.authentication.ModifiedSaml2Backend',
+    ]
+
+
+For example::
+
+    from djangosaml2.backends import Saml2Backend
+
+    class ModifiedSaml2Backend(Saml2Backend):
+        def save_user(self, user, *args, **kwargs):
+            user.save()
+            user_group = Group.objects.get(name='Default')
+            user.groups.add(user_group)
+            return super().save_user(user, *args, **kwargs)
+
+.. _hooks: https://github.com/identitypython/djangosaml2/blob/master/djangosaml2/backends.py#L181
+
 
 
 URLs
