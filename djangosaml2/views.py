@@ -110,9 +110,20 @@ class LoginView(SPConfigMixin, View):
         will be rendered.
     """
 
-    wayf_template = 'djangosaml2/wayf.html'
-    authorization_error_template = 'djangosaml2/auth_error.html'
-    post_binding_form_template = 'djangosaml2/post_binding_form.html'
+    wayf_template = getattr(
+        settings,
+        'SAML2_CUSTOM_WAYF_TEMPLATE','djangosaml2/wayf.html'
+    )
+    authorization_error_template = getattr(
+        settings,
+        'SAML2_CUSTOM_AUTHORIZATION_ERROR_TEMPLATE',
+        'djangosaml2/auth_error.html'
+    )
+    post_binding_form_template = getattr(
+        settings,
+        'SAML2_CUSTOM_POST_BINDING_FORM_TEMPLATE',
+        'djangosaml2/post_binding_form.html'
+    )
 
     def get_next_path(self, request: HttpRequest) -> str:
         ''' Returns the path to put in the RelayState to redirect the user to after having logged in.
