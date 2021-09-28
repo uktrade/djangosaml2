@@ -181,6 +181,9 @@ class LoginView(SPConfigMixin, View):
     def load_sso_kwargs(self, sso_kwargs):
         """ Inherit me if you want to put your desidered things in sso_kwargs """
 
+    def add_idp_hinting(self, http_response):
+        return add_idp_hinting(self.request, http_response) or http_response
+
     def get(self, request, *args, **kwargs):
         logger.debug('Login process started')
         next_path = self.get_next_path(request)
@@ -388,7 +391,7 @@ class LoginView(SPConfigMixin, View):
         )
 
         # idp hinting support, add idphint url parameter if present in this request
-        response = add_idp_hinting(request, http_response) or http_response
+        response = self.add_idp_hinting(http_response) or http_response
         return response
 
 
