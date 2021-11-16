@@ -218,9 +218,12 @@ Authn Context
 
 We can define the authentication context in settings.SAML_CONFIG['service']['sp'] as follows::
 
-    'requested_authn_context': {
-        'authn_context_class_ref': [saml2.saml.AUTHN_PASSWORD_PROTECTED],
-        'comparison': "exact"
+    "requested_authn_context": {
+        "authn_context_class_ref": [
+            "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
+            "urn:oasis:names:tc:SAML:2.0:ac:classes:TLSClient",
+        ],
+        "comparison": "minimum",
     }
 
 

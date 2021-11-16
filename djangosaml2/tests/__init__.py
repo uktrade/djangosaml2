@@ -270,6 +270,41 @@ class SAML2Tests(TestCase):
         response = self.client.get(reverse('saml2_login')+'?idp=https://unknown.org')
         self.assertEqual(response.status_code, 403)
 
+
+    def test_login_authn_context(self):
+        sp_kwargs = {"requested_authn_context": {
+                "authn_context_class_ref": [
+                    "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
+                    "urn:oasis:names:tc:SAML:2.0:ac:classes:TLSClient",
+                ],
+                "comparison": "minimum",
+            }
+        }
+
+        # monkey patch SAML configuration
+        settings.SAML_CONFIG = conf.create_conf(
+            sp_host='sp.example.com',
+            idp_hosts=['idp.example.com'],
+            metadata_file='remote_metadata_one_idp.xml',
+            sp_kwargs=sp_kwargs
+        )
+
+        response = self.client.get(reverse('saml2_login'))
+        self.assertEqual(response.status_code, 302)
+        location = response['Location']
+
+        url = urlparse(location)
+        self.assertEqual(url.hostname, 'idp.example.com')
+        self.assertEqual(url.path, '/simplesaml/saml2/idp/SSOService.php')
+
+        params = parse_qs(url.query)
+        self.assertIn('SAMLRequest', params)
+
+        saml_request = params['SAMLRequest'][0]
+        self.assertIn('urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport', decode_base64_and_inflate(
+            saml_request).decode('utf-8'))
+
+
     def test_login_one_idp(self):
         # monkey patch SAML configuration
         settings.SAML_CONFIG = conf.create_conf(
@@ -293,6 +328,7 @@ class SAML2Tests(TestCase):
         saml_request = params['SAMLRequest'][0]
         self.assertIn('AuthnRequest xmlns', decode_base64_and_inflate(
             saml_request).decode('utf-8'))
+
 
         # if we set a next arg in the login view, it is preserverd
         # in the RelayState argument

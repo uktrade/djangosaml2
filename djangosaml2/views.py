@@ -157,27 +157,6 @@ class LoginView(SPConfigMixin, View):
             )
             sso_kwargs['scoping'] = idp_scoping
 
-    def load_sso_kwargs_authn_context(self, sso_kwargs):
-        # this would work when https://github.com/IdentityPython/pysaml2/pull/807
-        ac = getattr(self.conf, '_sp_requested_authn_context', {})
-
-        # this works even without https://github.com/IdentityPython/pysaml2/pull/807
-        # hopefully to be removed soon !
-        if not ac:
-            scs = getattr(
-                settings, 'SAML_CONFIG', {}
-            ).get('service', {}).get('sp', {})
-            ac = scs.get('requested_authn_context', {})
-        # end transitional things to be removed soon !
-
-        if ac:
-            sso_kwargs["requested_authn_context"] = RequestedAuthnContext(
-                    authn_context_class_ref=[
-                        AuthnContextClassRef(ref) for ref in ac['authn_context_class_ref']
-                    ],
-                    comparison=ac.get('comparison', "minimum"),
-                )
-
     def load_sso_kwargs(self, sso_kwargs):
         """ Inherit me if you want to put your desidered things in sso_kwargs """
 
@@ -313,8 +292,6 @@ class LoginView(SPConfigMixin, View):
         # Enrich sso_kwargs ...
         # idp scoping
         self.load_sso_kwargs_scoping(sso_kwargs)
-        # authn context
-        self.load_sso_kwargs_authn_context(sso_kwargs)
         # other customization to be inherited
         self.load_sso_kwargs(sso_kwargs)
 
