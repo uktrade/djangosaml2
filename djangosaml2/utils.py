@@ -39,7 +39,7 @@ def get_custom_setting(name: str, default=None):
     return getattr(settings, name, default)
 
 
-def available_idps(config: SPConfig, langpref=None, idp_to_check=None) -> dict:
+def available_idps(config: SPConfig, langpref=None, idp_to_check: str = None) -> dict:
     if langpref is None:
         langpref = "en"
 
@@ -47,7 +47,7 @@ def available_idps(config: SPConfig, langpref=None, idp_to_check=None) -> dict:
 
     for metadata in config.metadata.metadata.values():
         # initiate a fetch to the selected idp when using MDQ, otherwise the MetaDataMDX is an empty database
-        if isinstance(metadata, MetaDataMDX) and idp_to_check and len(str(idp_to_check)) > 0:
+        if isinstance(metadata, MetaDataMDX) and idp_to_check:
             m = metadata[idp_to_check]
         result = metadata.any("idpsso_descriptor", "single_sign_on_service")
         if result:
