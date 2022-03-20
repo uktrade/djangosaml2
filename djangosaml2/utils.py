@@ -22,6 +22,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import resolve_url
+from saml2.mdstore import MetaDataMDX
 
 try:
     from django.utils.http import url_has_allowed_host_and_scheme
@@ -38,13 +39,16 @@ def get_custom_setting(name: str, default=None):
     return getattr(settings, name, default)
 
 
-def available_idps(config: SPConfig, langpref=None) -> dict:
+def available_idps(config: SPConfig, langpref=None, idp_to_check=None) -> dict:
     if langpref is None:
         langpref = "en"
 
     idps = set()
 
     for metadata in config.metadata.metadata.values():
+        # initiate a fetch to the selected idp when using MDQ, otherwise the MetaDataMDX is an empty database
+        if isinstance(metadata, MetaDataMDX) and idp_to_check and len(str(idp_to_check)) > 0:
+            m = metadata[idp_to_check]
         result = metadata.any("idpsso_descriptor", "single_sign_on_service")
         if result:
             idps.update(result.keys())
