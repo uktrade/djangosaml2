@@ -245,6 +245,10 @@ class LoginView(SPConfigMixin, View):
                     },
                 )
 
+        # when using MDQ and DS we need to initiate a check on the selected idp,
+        # otherwise the available idps will be empty
+        configured_idps = available_idps(conf, idp_to_check=selected_idp)
+
         # is the first one, otherwise next logger message will print None
         if not configured_idps:  # pragma: no cover
             raise IdPConfigurationMissing("IdP is missing or its metadata is expired.")
