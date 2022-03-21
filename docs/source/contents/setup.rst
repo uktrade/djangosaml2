@@ -479,7 +479,7 @@ settings.py file under the SAML_CONFIG option. We will see a typical configurati
             'name': 'Federated Django sample SP',
             'name_id_format': saml2.saml.NAMEID_FORMAT_TRANSIENT,
 
-            # For Okta add signed logout requets. Enable this:
+            # For Okta add signed logout requests. Enable this:
             # "logout_requests_signed": True,
 
             'endpoints': {
