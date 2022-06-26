@@ -26,17 +26,18 @@ from django.http import (
     HttpResponseRedirect,
     HttpResponseServerError,
 )
-from django.shortcuts import render
+from django.shortcuts import render, resolve_url
 from django.template import TemplateDoesNotExist
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
 from django.contrib import auth
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LogoutView as AuthLogoutView
+from django.contrib.sites.shortcuts import get_current_site
 
 import saml2
 from saml2.client_base import LogoutError
@@ -787,14 +788,29 @@ class LogoutView(SPConfigMixin, View):
         return HttpResponseBadRequest("No SAMLResponse or SAMLRequest parameter found")
 
 
-def finish_logout(request, response, next_page=None):
+def finish_logout(request, response):
     if getattr(settings, "SAML_IGNORE_LOGOUT_ERRORS", False) or (
         response and response.status_ok()
     ):
-        if not next_page:
-            next_page = getattr(settings, "LOGOUT_REDIRECT_URL", "/")
-        logger.debug("Performing django logout with a next_page of %s", next_page)
-        return AuthLogoutView.as_view()(request, next_page=next_page)
+        logger.debug("Performing django logout.")
+
+        auth.logout(request)
+
+        if settings.LOGOUT_REDIRECT_URL is not None:
+            return HttpResponseRedirect(resolve_url(settings.LOGOUT_REDIRECT_URL))
+        else:
+            current_site = get_current_site(request)
+            return render(
+                request,
+                "registration/logged_out.html",
+                {
+                    "site": current_site,
+                    "site_name": current_site.name,
+                    "title": _("Logged out"),
+                    "subtitle": None,
+                },
+            )
+
     logger.error("Unknown error during the logout")
     return render(request, "djangosaml2/logout_error.html", {})
 
