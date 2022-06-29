@@ -782,6 +782,39 @@ class SAML2Tests(TestCase):
             "Not a valid Response",
         )
 
+    @override_settings(LOGOUT_REDIRECT_URL="/dashboard/")
+    def test_post_logout_redirection(self):
+        settings.SAML_CONFIG = conf.create_conf(
+            sp_host="sp.example.com",
+            idp_hosts=["idp.example.com"],
+            metadata_file="remote_metadata_one_idp.xml",
+        )
+
+        self.do_login()
+
+        response = self.client.get(reverse("saml2_logout"))
+        self.assertEqual(response.status_code, 302)
+
+        # now simulate a logout response sent by the idp
+        expected_request = """<samlp:LogoutRequest xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="XXXXXXXXXXXXXXXXXXXXXX" Version="2.0" Destination="https://idp.example.com/simplesaml/saml2/idp/SingleLogoutService.php" Reason=""><saml:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">http://sp.example.com/saml2/metadata/</saml:Issuer><saml:NameID SPNameQualifier="http://sp.example.com/saml2/metadata/" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">1f87035b4c1325b296a53d92097e6b3fa36d7e30ee82e3fcb0680d60243c1f03</saml:NameID><samlp:SessionIndex>a0123456789abcdef0123456789abcdef</samlp:SessionIndex></samlp:LogoutRequest>"""
+
+        request_id = re.findall(r' ID="(.*?)" ', expected_request)[0]
+        instant = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        saml_response = """<?xml version='1.0' encoding='UTF-8'?>
+<samlp:LogoutResponse xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" Destination="http://sp.example.com/saml2/ls/" ID="a140848e7ce2bce834d7264ecdde0151" InResponseTo="{}" IssueInstant="{}" Version="2.0"><saml:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">https://idp.example.com/simplesaml/saml2/idp/metadata.php</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success" /></samlp:Status></samlp:LogoutResponse>""".format(
+            request_id, instant
+        )
+
+        response = self.client.get(
+            reverse("saml2_ls"),
+            {
+                "SAMLResponse": deflate_and_base64_encode(saml_response),
+            },
+        )
+        self.assertRedirects(response, "/dashboard/")
+        self.assertListEqual(list(self.client.session.keys()), [])
+
     def test_incomplete_logout(self):
         settings.SAML_CONFIG = conf.create_conf(
             sp_host="sp.example.com", idp_hosts=["idp.example.com"]
