@@ -27,7 +27,7 @@ def read(*rnames):
 
 setup(
     name="djangosaml2",
-    version="1.5.0",
+    version="1.5.1",
     description="pysaml2 integration for Django",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
@@ -37,6 +37,7 @@ setup(
         "Framework :: Django",
         "Framework :: Django :: 3.2",
         "Framework :: Django :: 4.0",
+        "Framework :: Django :: 4.1",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",

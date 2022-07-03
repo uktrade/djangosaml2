@@ -109,6 +109,10 @@ USE_L10N = True
 USE_TZ = True
 
 
+# https://docs.djangoproject.com/en/dev/ref/settings/#default-auto-field
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
