@@ -34,7 +34,7 @@ Contributing
 
 Please open Issues to start debate regarding the requested
 features, or the patch that you would apply. We do not use
-a strict submission format, please try to be more concise as possibile.
+a strict submission format, please try to be more concise as possible.
 
 The Pull Request MUST be done on the dev branch, please don't
 push code directly on the master branch.
