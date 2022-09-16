@@ -110,9 +110,11 @@ class Saml2Backend(ModelBackend):
             return saml_attribute[0]
         else:
             logger.error(
-                "attributes[saml_attr] attribute "
-                "value is missing. Probably the user "
-                "session is expired."
+                "attributes[saml_attr] attribute value is missing. "
+                f"Either the user session is expired or your mapping is invalid.\n"
+                f"django_field: {django_field}\n"
+                f"attributes: {attributes}\n"
+                f"attribute_mapping: {attribute_mapping}"
             )
 
     def authenticate(
