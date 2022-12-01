@@ -27,7 +27,7 @@ def read(*rnames):
 
 setup(
     name="djangosaml2",
-    version="1.5.3",
+    version="1.5.4",
     description="pysaml2 integration for Django",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
@@ -61,9 +61,5 @@ setup(
     packages=find_packages(exclude=["tests", "tests.*"]),
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-        "defusedxml>=0.4.1",
-        "Django>=2.2,<5",
-        "pysaml2>=6.5.1",
-    ],
+    install_requires=["defusedxml>=0.4.1", "Django>=2.2,<5", "pysaml2>=6.5.1"],
 )
