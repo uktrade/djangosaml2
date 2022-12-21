@@ -110,8 +110,7 @@ def validate_referral_url(request, url):
 
     if not url_has_allowed_host_and_scheme(url=url, allowed_hosts=saml_allowed_hosts):
         return get_fallback_login_redirect_url()
-
-    return urllib.parse.quote(url, safe="/")
+    return url
 
 
 def saml2_from_httpredirect_request(url):
