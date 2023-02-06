@@ -14,7 +14,7 @@ you will need to set the full path to it in the configuration stage.
 Now you can install the djangosaml2 package using pip. This
 will also install PySAML2 and its dependencies automatically::
 
-  apt install python3-pip xmlsec python3-dev libssl-dev libsasl2-dev
+  apt install python3-pip xmlsec1 python3-dev libssl-dev libsasl2-dev
   pip3 install virtualenv
   mkdir djangosaml2_project && cd "$_"
   virtualenv -ppython3 env
