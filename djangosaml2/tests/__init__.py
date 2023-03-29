@@ -308,8 +308,8 @@ class SAML2Tests(TestCase):
             metadata_file="remote_metadata_three_idps.xml",
         )
 
-        response = self.client.get(reverse("saml2_login") + "?idp=https://unknown.org")
-        self.assertEqual(response.status_code, 403)
+        response = self.client.get(reverse("saml2_login") + "?idp=<b>https://unknown.org</b>")
+        self.assertContains(response, "&lt;b&gt;https://unknown.org&lt;/b&gt;", status_code=403)
 
     def test_login_authn_context(self):
         sp_kwargs = {

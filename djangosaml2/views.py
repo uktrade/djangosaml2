@@ -30,6 +30,7 @@ from django.shortcuts import render, resolve_url
 from django.template import TemplateDoesNotExist
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.html import escape
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
@@ -152,7 +153,7 @@ class LoginView(SPConfigMixin, View):
         return next_path
 
     def unknown_idp(self, request, idp):
-        msg = f"Error: IdP EntityID {idp} was not found in metadata"
+        msg = f"Error: IdP EntityID {escape(idp)} was not found in metadata"
         logger.error(msg)
         return HttpResponse(msg.format("Please contact technical support."), status=403)
 
