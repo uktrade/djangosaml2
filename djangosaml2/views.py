@@ -155,7 +155,7 @@ class LoginView(SPConfigMixin, View):
     def unknown_idp(self, request, idp):
         msg = f"Error: IdP EntityID {escape(idp)} was not found in metadata"
         logger.error(msg)
-        return HttpResponse(msg.format("Please contact technical support."), status=403)
+        return HttpResponse(msg, status=403)
 
     def load_sso_kwargs_scoping(self, sso_kwargs):
         """Performs IdP Scoping if scoping param is present."""
