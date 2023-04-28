@@ -888,6 +888,7 @@ class SAML2Tests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("https://that-ds.org/ds", response.url)
 
+
 def test_config_loader(request):
     config = SPConfig()
     config.load({"entityid": "testentity"})
