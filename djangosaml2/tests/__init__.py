@@ -888,6 +888,26 @@ class SAML2Tests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("https://that-ds.org/ds", response.url)
 
+    def test_overridable_functions_are_called(self):
+        with mock.patch.multiple(
+            "djangosaml2.views.AssertionConsumerServiceView",
+            custom_validation=mock.DEFAULT,
+            handle_acs_failure=mock.DEFAULT,
+            authenticate_user=mock.DEFAULT,
+            post_login_hook=mock.DEFAULT,
+            customize_session=mock.DEFAULT,
+            customize_relay_state=mock.DEFAULT,
+            custom_redirect=mock.DEFAULT,
+        ) as mocked_methods:
+            self.do_login()
+        mocked_methods['custom_validation'].assert_called_once()
+        mocked_methods['handle_acs_failure'].assert_called_once()
+        mocked_methods['authenticate_user'].assert_called_once()
+        mocked_methods['post_login_hook'].assert_called_once()
+        mocked_methods['customize_session'].assert_called_once()
+        mocked_methods['customize_relay_state'].assert_called_once()
+        mocked_methods['custom_redirect'].assert_called_once()
+
 
 def test_config_loader(request):
     config = SPConfig()
