@@ -558,10 +558,10 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
                 create_unknown_user,
                 assertion_info
             )
-        except PermissionDenied:
+        except PermissionDenied as e:
             return self.handle_acs_failure(
                 request,
-                exception=PermissionDenied("No user could be authenticated."),
+                exception=e,
                 session_info=session_info,
             )
 
