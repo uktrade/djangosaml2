@@ -605,6 +605,8 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         self.post_login_hook(request, user, session_info)
         self.customize_session(user, session_info)
 
+        return user
+
     def post_login_hook(
         self, request: HttpRequest, user: settings.AUTH_USER_MODEL, session_info: dict
     ) -> None:
