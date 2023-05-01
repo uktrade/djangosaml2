@@ -550,7 +550,40 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         if callable(create_unknown_user):
             create_unknown_user = create_unknown_user()
 
+        try:
+            user = self.authenticate_user(
+                request,
+                session_info,
+                attribute_mapping,
+                create_unknown_user,
+                assertion_info
+            )
+        except PermissionDenied as e:
+            return self.handle_acs_failure(
+                request,
+                exception=e,
+                session_info=session_info,
+            )
+
+        relay_state = self.build_relay_state()
+        custom_redirect_url = self.custom_redirect(user, relay_state, session_info)
+        if custom_redirect_url:
+            return HttpResponseRedirect(custom_redirect_url)
+        relay_state = validate_referral_url(request, relay_state)
+        logger.debug("Redirecting to the RelayState: %s", relay_state)
+        return HttpResponseRedirect(relay_state)
+
+    def authenticate_user(
+            self,
+            request,
+            session_info,
+            attribute_mapping,
+            create_unknown_user,
+            assertion_info
+        ):
+        """Calls Django's authenticate method after the SAML response is verified"""
         logger.debug("Trying to authenticate the user. Session info: %s", session_info)
+
         user = auth.authenticate(
             request=request,
             session_info=session_info,
@@ -563,11 +596,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
                 "Could not authenticate user received in SAML Assertion. Session info: %s",
                 session_info,
             )
-            return self.handle_acs_failure(
-                request,
-                exception=PermissionDenied("No user could be authenticated."),
-                session_info=session_info,
-            )
+            raise PermissionDenied("No user could be authenticated.")
 
         auth.login(self.request, user)
         _set_subject_id(request.saml_session, session_info["name_id"])
@@ -576,13 +605,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         self.post_login_hook(request, user, session_info)
         self.customize_session(user, session_info)
 
-        relay_state = self.build_relay_state()
-        custom_redirect_url = self.custom_redirect(user, relay_state, session_info)
-        if custom_redirect_url:
-            return HttpResponseRedirect(custom_redirect_url)
-        relay_state = validate_referral_url(request, relay_state)
-        logger.debug("Redirecting to the RelayState: %s", relay_state)
-        return HttpResponseRedirect(relay_state)
+        return user
 
     def post_login_hook(
         self, request: HttpRequest, user: settings.AUTH_USER_MODEL, session_info: dict
